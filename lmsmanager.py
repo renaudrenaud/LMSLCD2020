@@ -33,14 +33,21 @@ class LMS_SERVER:
         # print(response.text)
         return response.json()
     
-    def _cls_build_players_list(self)-> list:
+    def cls_players_list(self)-> list:
+        """
+        Returns a list of players
+        detected connected to the server
+
+        - Output
+        : players, list of dict
+        """
 
         payload='{"id": 0, "params": ["-",["players","1"]],"method":"slim.request"}'
 
         players = self.cls_execute_request(payload)["result"]["players_loop"]
 
-        for player in players:
-            print(player["playerid"] + " =" + player["modelname"] + " - " + player["name"] + " : " + str(player["isplaying"]))
+        # for player in players:
+        #    print(player["playerid"] + " =" + player["modelname"] + " - " + player["name"] + " : " + str(player["isplaying"]))
         
         return players
 
@@ -102,11 +109,35 @@ class LMS_SERVER:
         
         payload = '{"id": 0, "params": ["' + mac_player + '",["status"]],"method": "slim.request"}'
         player_status = self.cls_execute_request(payload)
-        for status in player_status["result"]:
-            print(status + ":" + str(player_status["result"][status]))
+        # for status in player_status["result"]:
+        #    print(status + ":" + str(player_status["result"][status]))
 
         return player_status["result"]
     
+    def cls_song_info(self, song_id):
+        
+        payload = '{"id": 0,"params": ["",["songinfo",0,100,"track_id:' + str(song_id) + '","tags:GPASIediqtymkovrfijnCYXRTIuwxN"]],"method": "slim.request"}'
+    
+        song_info = self.cls_execute_request(payload)
+        return song_info["result"]
+    
+    def cls_player_current_title_status(self, mac_player:str)->dict:
+        """
+        player status
+
+        Input
+        : mac_player: str, the player mac address, ie: 5a:65:a2:33:80:79
+
+        Output
+        : dict: list of information about the player
+        
+        """
+        
+        payload = '{"id": 0, "params": ["' + mac_player + '",["status","current_title"]],"method": "slim.request"}'
+        player_status = self.cls_execute_request(payload)
+
+        return player_status["result"]
+
     def _cls_count_players(self)-> int:
         """
         try to count players
@@ -126,12 +157,18 @@ if __name__ == "__main__":
     parser.add_argument("-s","--server", type=str, default="192.168.1.192:9000", help = server_help)
 
     args = parser.parse_args()
-
     myServer = LMS_SERVER(args.server)
 
-    myServer._cls_build_players_list()
-    myServer.cls_define_volume("5a:65:a2:aa:80:79", 60)
+    players = myServer.cls_players_list()
+    for player in players:
+        if player["isplaying"] == 1:
+            break
+
+    myServer.cls_define_volume(player['playerid'], 60)
     # myServer.cls_player_stop("5a:65:a2:aa:80:79")
     # myServer.cls_player_play("5a:65:a2:aa:80:79")
-    myServer.cls_player_status("5a:65:a2:aa:80:79")
+    print("Waoo ->" + player['name'])
+    myServer.cls_player_status(player['playerid'])
+    song = myServer.cls_player_current_title_status(player['playerid'])
+    print(str(song))
 
