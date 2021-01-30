@@ -30,7 +30,7 @@ class LMS_SERVER:
         except Exception as err:
             print(str(err))
         
-        # print(response.text)
+        
         return response.json()
     
     def cls_players_list(self)-> list:
