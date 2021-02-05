@@ -13,6 +13,7 @@ from time import sleep
 from time import time
 from time import strftime
 from time import gmtime
+from typing import ChainMap
 from lmsmanager import LMS_SERVER
 import platform
 
@@ -51,6 +52,7 @@ def getPlayerInfo()->dict:
     """
     players = myServer.cls_players_list()
     for player in players:
+        # print(player["name"])
         if player["isplaying"] == 1:
             return player
 
@@ -77,89 +79,103 @@ def get_from_loop(source_list, key_to_find)->str:
 
 
 last_song = {}
+album = ""
 runner = "+"
 decal = 0
 song_info = None
+mixer_volume = 0
+change_volume = False
+sleep_duration = 0.8
 
 while True:
     seconds = time()
     today = datetime.today()
-    player = getPlayerInfo()
-    if player is not None:
+    player_info = getPlayerInfo()
+    if player_info is not None:
         # sec = int(today.strftime("%S"))
         if runner == "+":
             runner = "*"
         else:
             runner = "+"
                         
-        player = myServer.cls_player_current_title_status(player['playerid'])
+        player = myServer.cls_player_current_title_status(player_info['playerid'])
+        if player["mixer volume"] != mixer_volume:
+            if mixer_volume == 0:
+                mixer_volume = player["mixer volume"]
+            else:
+                mixer_volume = player["mixer volume"]
+                lcd.lcd_display_string("Volume " + str(mixer_volume) + " /100" , 2)
+                sleep(0.2)
+                change_volume = True
+        else:
+            change_volume = False
+
         song_index = int(player["playlist_cur_index"]) 
         song = player["playlist_loop"][song_index]
 
-        if int(song["id"]) > 0:
+            
+        if int(song["id"]) != 0:
             # When id is positive, it comes from LMS database
-            if song_info is None or song["id"] != song_info["songinfo_loop"][0]["id"]:
-                song_info = myServer.cls_song_info(song["id"])
-                if "artist" in song_info["songinfo_loop"][4].keys():
+            if (song_info is None or song["id"] != song_info["songinfo_loop"][0]["id"]) or int(song["id"]) < 0:
+                song_info = myServer.cls_song_info(song["id"], player_info['playerid'])
+                if song != last_song:
+                    album = get_from_loop(song_info["songinfo_loop"], "album")
+                    # if "artist" in song_info["songinfo_loop"][4].keys():
                     artist = get_from_loop(song_info["songinfo_loop"], "artist")
-                elif "albumartist" in song_info["songinfo_loop"][4].keys():
-                    artist = get_from_loop(song_info["songinfo_loop"], "albumartist")
-                song_title = get_from_loop(song_info["songinfo_loop"], "title")
-                samplesize = get_from_loop(song_info["songinfo_loop"], "samplesize")
-                samplerate = get_from_loop(song_info["songinfo_loop"], "samplerate")
-                bitrate = get_from_loop(song_info["songinfo_loop"], "bitrate")
+                    if len(artist) == 0:
+                        artist = get_from_loop(song_info["songinfo_loop"], "albumartist")
+                    song_title = get_from_loop(song_info["songinfo_loop"], "title")
+                    if "current_title" in player.keys():
+                        current_title = player['current_title']
+                    else:
+                        current_title = ""
+                    samplesize = get_from_loop(song_info["songinfo_loop"], "samplesize")
+                    samplerate = get_from_loop(song_info["songinfo_loop"], "samplerate")
+                    bitrate = get_from_loop(song_info["songinfo_loop"], "bitrate")
 
-                duration = get_from_loop(song_info["songinfo_loop"],"duration") 
-                dur_hh_mm_ss = strftime("%H:%M:%S", gmtime(duration))
-                track_pos = str(int(player['playlist_cur_index']) + 1) + " / " + str(player['playlist_tracks']) 
+                    duration = get_from_loop(song_info["songinfo_loop"],"duration") 
+                    dur_hh_mm_ss = strftime("%H:%M:%S", gmtime(int(duration)))
+                    track_pos = str(int(player['playlist_cur_index']) + 1) + " / " + str(player['playlist_tracks']) 
+                    decal = 0
 
-        else:
-            # id is a negative value: prbably from radio?
+        if change_volume == True:
             pass
-
-        if player["time"] < 3:
+        elif player["time"] < 3:
             # When track time is less then 3 seconds it means a new song
-            lcd.lcd_display_string(player['player_ip'].split(":")[0], 1)    
-            lcd.lcd_display_string(player['player_name'], 2)
-            decal = 0
-            sleep(2)    
-            
-        elif player["time"] < 10:
-            if int(song["id"]) > 0:
-                lcd.lcd_display_string((artist + ' ' * 20)[:16], 1)
-                lcd.lcd_display_string(( song_title + ' ' * 20)[:16], 2)
-            else:
-                lcd.lcd_display_string((player["current_title"]+ ' ' * 20)[:16], 1)
-                lcd.lcd_display_string((song['title'] + ' ' * 20)[:16], 2)
+            lcd.lcd_display_string(player['player_name'], 1)
+            lcd.lcd_display_string(player['player_ip'].split(":")[0], 2)    
+            sleep(2)     
 
-        elif player["time"] < 20:
-            if song_info is not None:
-                # print some info on bits, frq and bitrate
-                lcd.lcd_display_string(("B/F: " + samplesize + " / " + samplerate + ' ' * 20)[:16], 1)
-                lcd.lcd_display_string((bitrate + ' ' * 20)[:16], 2)
+        elif player["time"] < 10:    
+            if decal > max_car:
+                decal = 0  
+            lcd.lcd_display_string(artist[decal:16 + decal], 1)
+            lcd.lcd_display_string(album[decal:16 + decal], 2)
+      
+        elif player["time"] < 15:
+            lcd.lcd_display_string(("B:" + samplesize + " - F:" + samplerate + ' ' * 20)[:16], 1)
+            lcd.lcd_display_string((bitrate + ' ' * 20)[:16], 2)
             
-        elif player["time"] < 25:
-            if song_info is not None:
-                lcd.lcd_display_string(("durat:" + dur_hh_mm_ss +  ' ' * 20)[:16], 1)
-                lcd.lcd_display_string(("tracks: " + track_pos +  ' ' * 20)[:16], 2)
-            else:
-                lcd.lcd_display_string((player["current_title"]+ ' ' * 20)[:16], 1)
-                lcd.lcd_display_string((song['title'] + ' ' * 20)[:16], 2)
+        elif player["time"] < 20:
+
+            lcd.lcd_display_string("durat-:" + dur_hh_mm_ss, 1)
+            lcd.lcd_display_string("tracks: " + track_pos, 2)
 
         else:
             lcd.lcd_display_string(today.strftime("%d/%m/%y  %H:%M") + runner, 1)
-            if len(song['title']) < 16:
-                lcd.lcd_display_string((song['title'] + ' ' * 20)[:16], 2)
-            else:
-                max_car = len(song['title']) - 16
-                if decal == max_car:
-                    decal = 0  
-                lcd.lcd_display_string(song['title'][decal:16 + decal], 2)
-                decal = decal + 1
-        last_song_id = song
+            title = album + " - " + song_title 
+             
+            title = "Alb: " + album + " - Tit: " + song_title + " (" + track_pos + ") - Art: " + artist
+            max_car = len(title) - 16
+            if decal > max_car:
+                decal = 0  
+            lcd.lcd_display_string(title[decal:16 + decal], 2)
+            decal = decal + 1
+        last_song = song
+        sleep(sleep_duration)
     else:
         # Just a clock !
         today = datetime.today()
         lcd.lcd_display_string(today.strftime("Clock %d/%m/%Y"), 1)
         lcd.lcd_display_string(today.strftime("No play %H:%M:%S"), 2)
-    sleep(.8)
+        sleep(.1)

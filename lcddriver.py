@@ -59,7 +59,7 @@ Rs = 0b00000001 # Register select bit
 
 class lcd:
    #initializes objects and lcd
-   def __init__(self, address:int = 0x3f) -> None:
+   def __init__(self, address:int = 0x3f, columns = 16, lines = 2) -> None:
       """
       Input
       - address: int, the LCD address in hex format, grabbed by sudo i2cdetect -y 1, ie 0x3f or 0x27...
@@ -67,6 +67,9 @@ class lcd:
       Ouput
       - None
       """
+      self.columns = columns
+      self. lines = lines
+
       self.lcd_device = i2c_lib.i2c_device(address)
 
       self.lcd_write(0x03)
@@ -98,6 +101,7 @@ class lcd:
 
    # put string function
    def lcd_display_string(self, string, line):
+      string = (string + " " * (self.columns) )[:self.columns]
       if line == 1:
          self.lcd_write(0x80)
       if line == 2:

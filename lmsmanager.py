@@ -4,6 +4,7 @@
 
 import requests
 import argparse
+from json import dumps
 
 class LMS_SERVER:
     """
@@ -24,12 +25,10 @@ class LMS_SERVER:
         Execute request
         """
         headers = {'Content-Type': 'application/json'}
-
         try:
             response = requests.request("POST", url=self.URL, headers=headers, data=payload)
         except Exception as err:
             print(str(err))
-        
         
         return response.json()
     
@@ -114,9 +113,10 @@ class LMS_SERVER:
 
         return player_status["result"]
     
-    def cls_song_info(self, song_id):
+    def cls_song_info(self, song_id, player_id):
         
-        payload = '{"id": 0,"params": ["",["songinfo",0,100,"track_id:' + str(song_id) + '","tags:GPASIediqtymkovrfijnCYXRTIuwxN"]],"method": "slim.request"}'
+        payload = '{"id": 0,"params": ["' + player_id + '",["songinfo",0,100,"track_id:' + str(song_id) + '"]],"method": "slim.request"}'
+        #,"tags:GPASIediqtymkovrfijnCYXRTIuwxN"]],"method": "slim.request"}'
     
         song_info = self.cls_execute_request(payload)
         return song_info["result"]
