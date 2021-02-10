@@ -21,8 +21,8 @@ description = "LMS API Requester"
 server_help = "ip and port for the server. something like 192.168.1.192:9000"
 lcd_help = "LCD address something like 0x3f"
 parser = argparse.ArgumentParser(description = description)
-parser.add_argument("-s","--server", type=str, default="192.168.1.192:9000", help = server_help)
-parser.add_argument("-l","--lcd", type=str, default=0x3f, help = lcd_help)
+parser.add_argument("-s","--server", type=lambda x: int(x, 0), default="192.168.1.192:9000", help = server_help)
+parser.add_argument("-l","--lcd", , default=0x3f, help = lcd_help)
 
 args = parser.parse_args()
 
