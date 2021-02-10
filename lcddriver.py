@@ -1,5 +1,7 @@
 """
-LCD driver.
+LCD driver from 
+
+https://github.com/sweetpi/python-i2c-lcd/blob/master/lcddriver.py
 
 - Do not forget to instantiate with the address value using sudo i2cdetect -y 1
  

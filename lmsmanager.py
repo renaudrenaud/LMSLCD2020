@@ -29,7 +29,7 @@ class LMS_SERVER:
             response = requests.request("POST", url=self.URL, headers=headers, data=payload)
         except Exception as err:
             print(str(err))
-        
+            return err
         return response.json()
     
     def cls_players_list(self)-> list:

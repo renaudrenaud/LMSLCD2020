@@ -33,16 +33,16 @@ args = parser.parse_args()
 print (platform.platform())
 if "Windows" in platform.platform() or args.virtuallcd == "yes":
     import no_lcddriver
-    lcd = no_lcddriver.lcd(address = args.lcd) 
+    lcd = no_lcddriver.lcd(address = args.lcd, columns=20) 
 else:
     import lcddriver
-    lcd = lcddriver.lcd(address = args.lcd)
+    lcd = lcddriver.lcd(address = args.lcd, columns=20)
 
 lcd.lcd_clear()
 
 myServer = LMS_SERVER(args.server)
 
-def getPlayerInfo()->dict: 
+def getPlayersInfo()->dict: 
     """
     Grab the information for the first player playing music
 
@@ -56,7 +56,8 @@ def getPlayerInfo()->dict:
     for player in players:
         # print(player["name"])
         if player["isplaying"] == 1:
-            return player
+            return player, players
+    return None, players
 
 
 def get_from_loop(source_list, key_to_find)->str:
@@ -92,7 +93,7 @@ sleep_duration = 0.8
 while True:
     seconds = time()
     today = datetime.today()
-    player_info = getPlayerInfo()
+    player_info, players = getPlayersInfo()
     if player_info is not None:
         # sec = int(today.strftime("%S"))
         if runner == "+":
@@ -137,7 +138,11 @@ while True:
 
                     duration = get_from_loop(song_info["songinfo_loop"],"duration") 
                     dur_hh_mm_ss = strftime("%H:%M:%S", gmtime(int(duration)))
-                    track_pos = str(int(player['playlist_cur_index']) + 1) + " / " + str(player['playlist_tracks']) 
+
+                    
+
+
+                    track_pos = str(int(player['playlist_cur_index']) + 1) + "/" + str(player['playlist_tracks']) 
                     decal = 0
                     decal1 = 0
                     decal2 = 0
@@ -151,18 +156,18 @@ while True:
             sleep(2)     
 
         elif player["time"] < 10:    
-            max_car1 = len(artist) -16
-            max_car2 = len(album) -16
+            max_car1 = len(artist) -20
+            max_car2 = len(album) -20
             if decal1 > max_car1:
                 decal1 = 0
             if decal2 > max_car1:
                 decal2 = 0
-            lcd.lcd_display_string(artist[decal1:16 + decal], 1)
-            lcd.lcd_display_string(album[decal2:16 + decal], 2)
+            lcd.lcd_display_string(artist[decal1:20 + decal], 1)
+            lcd.lcd_display_string(album[decal2:20 + decal], 2)
       
         elif player["time"] < 15:
-            lcd.lcd_display_string(("B:" + samplesize + " - F:" + samplerate + ' ' * 20)[:16], 1)
-            lcd.lcd_display_string((bitrate + ' ' * 20)[:16], 2)
+            lcd.lcd_display_string(("B:" + samplesize + " - F:" + samplerate + ' ' * 20)[:20], 1)
+            lcd.lcd_display_string((bitrate + ' ' * 20)[:20], 2)
             
         elif player["time"] < 20:
 
@@ -170,20 +175,32 @@ while True:
             lcd.lcd_display_string("tracks: " + track_pos, 2)
 
         else:
-            lcd.lcd_display_string(today.strftime("%d/%m/%y  %H:%M") + runner, 1)
+            lcd.lcd_display_string(today.strftime("%d/%m/%y  %H:%M:%S"), 1)
+            lcd.lcd_display_string(artist, 2)
             title = album + " - " + song_title 
-             
-            title = "Alb: " + album + " - Tit: " + song_title + " (" + track_pos + ") - Art: " + artist
-            max_car = len(title) - 16
+            elapsed = strftime("%M:%S", gmtime(player["time"]))
+            if len(artist) > 20: 
+                title = "Alb: " + album + " - Tit: " + song_title + " - Art: " + artist + "     "
+            else:
+                title = "Alb: " + album + " - Tit: " + song_title + "     "
+            max_car = len(title) - 20
             if decal > max_car:
                 decal = 0  
-            lcd.lcd_display_string(title[decal:16 + decal], 2)
+            lcd.lcd_display_string(title[decal:20 + decal], 3)
+            
+            lcd.lcd_display_string("T " + track_pos + " " + elapsed + " " + str(round(100 / int(duration) * player["time"])) + "%", 4)
+            
             decal = decal + 1
         last_song = song
         sleep(sleep_duration)
     else:
         # Just a clock !
         today = datetime.today()
-        lcd.lcd_display_string(today.strftime("Clock %d/%m/%Y"), 1)
-        lcd.lcd_display_string(today.strftime("No play %H:%M:%S"), 2)
+        lcd.lcd_display_string(today.strftime("%d/%m/%Y  %H:%M:%S"), 1)
+        lcd.lcd_display_string(" ", 2)
+        lcd.lcd_display_string("s=" + args.server, 3)
+        if len(players) > 0:
+            lcd.lcd_display_string("Players count: " + str(len(players)), 4)
+        else:
+            lcd.lcd_display_string("Player not found!", 4)
         sleep(.1)
