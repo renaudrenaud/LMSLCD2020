@@ -20,9 +20,12 @@ import platform
 description = "LMS API Requester"
 server_help = "ip and port for the server. something like 192.168.1.192:9000"
 lcd_help = "LCD address something like 0x3f"
+i2c_help = "i2cdetect port, 0 or 1, 0 for Orange Pi Zero, 1 for Rasp > V2"
+
 parser = argparse.ArgumentParser(description = description)
 parser.add_argument("-s","--server", type=str, default="192.168.1.192:9000", help = server_help)
 parser.add_argument("-l","--lcd", type=lambda x: int(x, 0), default=0x3f, help = lcd_help)
+parser.add_argument("-i","--i2cport", type=int, default=1, help = i2c_help)
 parser.add_argument("-v","--virtuallcd", type=str, default="no", help = lcd_help)
 
 args = parser.parse_args()
@@ -36,7 +39,7 @@ if "Windows" in platform.platform() or args.virtuallcd == "yes":
     lcd = no_lcddriver.lcd(address = args.lcd) 
 else:
     import lcddriver
-    lcd = lcddriver.lcd(address = args.lcd)
+    lcd = lcddriver.lcd(address = args.lcd, i2c_port = args.i2cport)
 
 lcd.lcd_clear()
 

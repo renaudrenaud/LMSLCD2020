@@ -43,8 +43,10 @@ class LMS_SERVER:
 
         payload='{"id": 0, "params": ["-",["players","1"]],"method":"slim.request"}'
 
-        players = self.cls_execute_request(payload)["result"]["players_loop"]
-
+        try:
+            players = self.cls_execute_request(payload)["result"]["players_loop"]
+        except Exception as err:
+            return err
         # for player in players:
         #    print(player["playerid"] + " =" + player["modelname"] + " - " + player["name"] + " : " + str(player["isplaying"]))
         

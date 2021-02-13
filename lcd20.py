@@ -37,6 +37,12 @@ if "Windows" in platform.platform() or args.virtuallcd == "yes":
 else:
     import lcddriver
     lcd = lcddriver.lcd(address = args.lcd, columns=20)
+    lcd.lcd_clear()
+    lcd.lcd_display_string("        C&R ID ", 1)
+    lcd.lcd_display_string("      Audiofolies" , 2)
+    lcd.lcd_display_string("sites.google.com/",3)
+    lcd.lcd_display_string("view/audiofolies",4)
+    sleep(4)
 
 lcd.lcd_clear()
 
@@ -52,11 +58,15 @@ def getPlayersInfo()->dict:
     Returns:
         dict: LMS Player
     """
-    players = myServer.cls_players_list()
-    for player in players:
-        # print(player["name"])
-        if player["isplaying"] == 1:
-            return player, players
+    try:
+        players = myServer.cls_players_list()
+        for player in players:
+            # print(player["name"])
+            if player["isplaying"] == 1:
+                return player, players
+    except Exception  as err:
+        return err 
+    
     return None, players
 
 
@@ -152,7 +162,9 @@ while True:
         elif player["time"] < 3:
             # When track time is less then 3 seconds it means a new song
             lcd.lcd_display_string(player['player_name'], 1)
-            lcd.lcd_display_string(player['player_ip'].split(":")[0], 2)    
+            lcd.lcd_display_string(player['player_ip'].split(":")[0], 2)  
+            lcd.lcd_display_string(artist, 3)
+            lcd.lcd_display_string(album, 4)  
             sleep(2)     
 
         elif player["time"] < 10:    
@@ -162,8 +174,8 @@ while True:
                 decal1 = 0
             if decal2 > max_car1:
                 decal2 = 0
-            lcd.lcd_display_string(artist[decal1:20 + decal], 1)
-            lcd.lcd_display_string(album[decal2:20 + decal], 2)
+            lcd.lcd_display_string(artist[decal1:20 + decal], 3)
+            lcd.lcd_display_string(album[decal2:20 + decal], 4)
       
         elif player["time"] < 15:
             lcd.lcd_display_string(("B:" + samplesize + " - F:" + samplerate + ' ' * 20)[:20], 1)
@@ -178,7 +190,7 @@ while True:
             lcd.lcd_display_string(today.strftime("%d/%m/%y  %H:%M:%S"), 1)
             lcd.lcd_display_string(artist, 2)
             title = album + " - " + song_title 
-            elapsed = strftime("%M:%S", gmtime(player["time"]))
+            elapsed = strftime("%M:%S", gmtime(player["time"])) + "/" + strftime("%M:%S", gmtime(int(duration)))
             if len(artist) > 20: 
                 title = "Alb: " + album + " - Tit: " + song_title + " - Art: " + artist + "     "
             else:
@@ -188,7 +200,7 @@ while True:
                 decal = 0  
             lcd.lcd_display_string(title[decal:20 + decal], 3)
             
-            lcd.lcd_display_string("T " + track_pos + " " + elapsed + " " + str(round(100 / int(duration) * player["time"])) + "%", 4)
+            lcd.lcd_display_string("T " + track_pos + " " + elapsed, 4)
             
             decal = decal + 1
         last_song = song
