@@ -41,7 +41,7 @@ class LMS_SERVER:
         : players, list of dict
         """
 
-        payload='{"id": 0, "params": ["-",["players","1"]],"method":"slim.request"}'
+        payload='{"id": 0, "params": ["-",["players","0"]],"method":"slim.request"}'
 
         try:
             players = self.cls_execute_request(payload)["result"]["players_loop"]
@@ -122,6 +122,15 @@ class LMS_SERVER:
     
         song_info = self.cls_execute_request(payload)
         return song_info["result"]
+
+    def cls_server_status(self)->dict:
+        """
+        grab the server status
+        """
+        payload = '{"id": 0,"params": ["-",["serverstatus",0,100]],"method": "slim.request"}'
+        server_status = self.cls_execute_request(payload)
+        
+        return server_status # ["result"]
     
     def cls_player_current_title_status(self, mac_player:str)->dict:
         """
@@ -138,7 +147,10 @@ class LMS_SERVER:
         payload = '{"id": 0, "params": ["' + mac_player + '",["status","current_title"]],"method": "slim.request"}'
         player_status = self.cls_execute_request(payload)
 
-        return player_status["result"]
+        try:
+            return player_status["result"]
+        except:
+            return None
 
     def _cls_count_players(self)-> int:
         """

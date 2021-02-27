@@ -30,22 +30,8 @@ parser.add_argument("-v","--virtuallcd", type=str, default="no", help = lcd_help
 
 args = parser.parse_args()
 
-# if 
-# windows, we cannot use the LCD
-# instead we print on the same line
-print (platform.platform())
-if "Windows" in platform.platform() or args.virtuallcd == "yes":
-    import no_lcddriver
-    lcd = no_lcddriver.lcd(address = args.lcd) 
-else:
-    import lcddriver
-    lcd = lcddriver.lcd(address = args.lcd, i2c_port = args.i2cport)
 
-lcd.lcd_clear()
-
-myServer = LMS_SERVER(args.server)
-
-def getPlayerInfo()->dict: 
+def getPlayersInfo()->dict: 
     """
     Grab the information for the first player playing music
 
@@ -55,12 +41,16 @@ def getPlayerInfo()->dict:
     Returns:
         dict: LMS Player
     """
-    players = myServer.cls_players_list()
-    for player in players:
-        # print(player["name"])
-        if player["isplaying"] == 1:
-            return player
-
+    try:
+        players = myServer.cls_players_list()
+        for player in players:
+            # print(player["name"])
+            if player["isplaying"] == 1:
+                return player, players
+    except Exception  as err:
+        return None, None 
+    
+    return None, players
 
 def get_from_loop(source_list, key_to_find)->str:
     """
@@ -82,6 +72,41 @@ def get_from_loop(source_list, key_to_find)->str:
 
     return ret
 
+def screen_lms_info():
+    """
+    Print some info on the LCD when connection to the LMS
+
+    """
+    if type(server_status) is not dict:
+        lcd.lcd_display_string("LMS not found", 1)
+        lcd.lcd_display_string("no player.",2)
+    else:
+        server = server_status["result"]
+        lcd.lcd_display_string("LMS :" + server["version"],1)
+        lcd.lcd_display_string("Players ct:" + str(server["player count"]),2)
+
+
+# if 
+# windows, we cannot use the LCD
+# instead we print on the same line
+print (platform.platform())
+if "Windows" in platform.platform() or args.virtuallcd == "yes":
+    import no_lcddriver
+    lcd = no_lcddriver.lcd(address = args.lcd) 
+else:
+    import lcddriver
+    lcd = lcddriver.lcd(address = args.lcd, i2c_port = args.i2cport)
+    lcd.lcd_display_string("     C&R ID     ", 1)
+    lcd.lcd_display_string("   Audiofolies  " , 2)
+    sleep(3)
+
+
+myServer = LMS_SERVER(args.server)
+server_status = myServer.cls_server_status()
+
+screen_lms_info()
+
+sleep(3)
 
 last_song = {}
 album = ""
@@ -93,10 +118,13 @@ change_volume = False
 sleep_duration = 0.8
 
 while True:
-    seconds = time()
+    # seconds = time()
     today = datetime.today()
-    player_info = getPlayerInfo()
-    if player_info is not None:
+    if today.second == 0:
+        server_status = myServer.cls_server_status()
+    player_info, players = getPlayersInfo()
+    
+    if player_info is not None and type(server_status) is dict:
         # sec = int(today.strftime("%S"))
         if runner == "+":
             runner = "*"
@@ -117,8 +145,7 @@ while True:
 
         song_index = int(player["playlist_cur_index"]) 
         song = player["playlist_loop"][song_index]
-
-            
+    
         if int(song["id"]) != 0:
             # When id is positive, it comes from LMS database
             if (song_info is None or song["id"] != song_info["songinfo_loop"][0]["id"]) or int(song["id"]) < 0:
@@ -188,5 +215,5 @@ while True:
         # Just a clock !
         today = datetime.today()
         lcd.lcd_display_string(today.strftime("Clock %d/%m/%Y"), 1)
-        lcd.lcd_display_string(today.strftime("No play %H:%M:%S"), 2)
+        lcd.lcd_display_string(today.strftime("No LMS? %H:%M:%S"), 2)
         sleep(.1)

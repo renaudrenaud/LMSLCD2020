@@ -17,37 +17,6 @@ from typing import ChainMap
 from lmsmanager import LMS_SERVER
 import platform
 
-description = "LMS API Requester"
-server_help = "ip and port for the server. something like 192.168.1.192:9000"
-lcd_help = "LCD address something like 0x3f"
-parser = argparse.ArgumentParser(description = description)
-parser.add_argument("-s","--server", type=str, default="192.168.1.192:9000", help = server_help)
-parser.add_argument("-l","--lcd", type=lambda x: int(x, 0), default=0x3f, help = lcd_help)
-parser.add_argument("-v","--virtuallcd", type=str, default="no", help = lcd_help)
-
-args = parser.parse_args()
-
-# if 
-# windows, we cannot use the LCD
-# instead we print on the same line
-print (platform.platform())
-if "Windows" in platform.platform() or args.virtuallcd == "yes":
-    import no_lcddriver
-    lcd = no_lcddriver.lcd(address = args.lcd, columns=20) 
-else:
-    import lcddriver
-    lcd = lcddriver.lcd(address = args.lcd, columns=20)
-    lcd.lcd_clear()
-    lcd.lcd_display_string("        C&R ID ", 1)
-    lcd.lcd_display_string("      Audiofolies" , 2)
-    lcd.lcd_display_string("sites.google.com/",3)
-    lcd.lcd_display_string("view/audiofolies",4)
-    sleep(4)
-
-lcd.lcd_clear()
-
-myServer = LMS_SERVER(args.server)
-
 def getPlayersInfo()->dict: 
     """
     Grab the information for the first player playing music
@@ -65,7 +34,7 @@ def getPlayersInfo()->dict:
             if player["isplaying"] == 1:
                 return player, players
     except Exception  as err:
-        return err 
+        return None, None 
     
     return None, players
 
@@ -90,6 +59,53 @@ def get_from_loop(source_list, key_to_find)->str:
 
     return ret
 
+def screen_lms_info():
+    """
+    Print some info on the LCD when connection to the LMS
+
+    """
+    if type(server_status) is not dict:
+        lcd.lcd_display_string("LMS not found", 3)
+        lcd.lcd_display_string("no player.",4)
+    else:
+        server = server_status["result"]
+        lcd.lcd_display_string("LMS version:" + server["version"],3)
+        lcd.lcd_display_string("Players:" + str(server["player count"]),4)
+
+description = "LMS API Requester"
+server_help = "ip and port for the server. something like 192.168.1.192:9000"
+lcd_help = "LCD address something like 0x3f"
+i2c_help = "i2cdetect port, 0 or 1, 0 for Orange Pi Zero, 1 for Rasp > V2"
+
+parser = argparse.ArgumentParser(description = description)
+parser.add_argument("-s","--server", type=str, default="192.168.1.192:9000", help = server_help)
+parser.add_argument("-l","--lcd", type=lambda x: int(x, 0), default=0x3f, help = lcd_help)
+parser.add_argument("-i","--i2cport", type=int, default=1, help = i2c_help)
+parser.add_argument("-v","--virtuallcd", type=str, default="no", help = lcd_help)
+
+args = parser.parse_args()
+
+print (platform.platform())
+if "Windows" in platform.platform() or args.virtuallcd == "yes":
+    import no_lcddriver
+    lcd = no_lcddriver.lcd(address = args.lcd, columns=20) 
+else:
+    import lcddriver
+    lcd = lcddriver.lcd(address = args.lcd, columns=20)
+    lcd.lcd_clear()
+    lcd.lcd_display_string("      C&R ID ", 1)
+    lcd.lcd_display_string("    Audiofolies" , 2)
+    lcd.lcd_display_string("sites.google.com/",3)
+    lcd.lcd_display_string("view/audiofolies",4)
+    sleep(4)
+
+
+myServer = LMS_SERVER(args.server)
+server_status = myServer.cls_server_status()
+
+screen_lms_info()
+
+sleep(3)
 
 last_song = {}
 album = ""
@@ -98,13 +114,16 @@ decal = 0
 song_info = None
 mixer_volume = 0
 change_volume = False
-sleep_duration = 0.8
+sleep_duration = 0.6
 
 while True:
     seconds = time()
     today = datetime.today()
+    if today.second == 0:
+        server_status = myServer.cls_server_status()
+
     player_info, players = getPlayersInfo()
-    if player_info is not None:
+    if player_info is not None and type(server_status) is dict:
         # sec = int(today.strftime("%S"))
         if runner == "+":
             runner = "*"
@@ -125,7 +144,6 @@ while True:
 
         song_index = int(player["playlist_cur_index"]) 
         song = player["playlist_loop"][song_index]
-
             
         if int(song["id"]) != 0:
             # When id is positive, it comes from LMS database
@@ -142,15 +160,19 @@ while True:
                         current_title = player['current_title']
                     else:
                         current_title = ""
+                    
+                    if len(get_from_loop(song_info["songinfo_loop"], "remote_title")) > 0:
+                        current_title = get_from_loop(song_info["songinfo_loop"], "remote_title") + "-" + current_title
+
+                    if len(current_title) == 0:
+                        current_title = song_title
+
                     samplesize = get_from_loop(song_info["songinfo_loop"], "samplesize")
                     samplerate = get_from_loop(song_info["songinfo_loop"], "samplerate")
                     bitrate = get_from_loop(song_info["songinfo_loop"], "bitrate")
 
                     duration = get_from_loop(song_info["songinfo_loop"],"duration") 
                     dur_hh_mm_ss = strftime("%H:%M:%S", gmtime(int(duration)))
-
-                    
-
 
                     track_pos = str(int(player['playlist_cur_index']) + 1) + "/" + str(player['playlist_tracks']) 
                     decal = 0
@@ -162,7 +184,11 @@ while True:
         elif player["time"] < 3:
             # When track time is less then 3 seconds it means a new song
             lcd.lcd_display_string(player['player_name'], 1)
-            lcd.lcd_display_string(player['player_ip'].split(":")[0], 2)  
+            try:
+                lcd.lcd_display_string(player['player_ip'].split(":")[0], 2)  
+            except:
+                pass
+            
             lcd.lcd_display_string(artist, 3)
             lcd.lcd_display_string(album, 4)  
             sleep(2)     
@@ -188,19 +214,22 @@ while True:
 
         else:
             lcd.lcd_display_string(today.strftime("%d/%m/%y  %H:%M:%S"), 1)
-            lcd.lcd_display_string(artist, 2)
-            title = album + " - " + song_title 
-            elapsed = strftime("%M:%S", gmtime(player["time"])) + "/" + strftime("%M:%S", gmtime(int(duration)))
-            if len(artist) > 20: 
-                title = "Alb: " + album + " - Tit: " + song_title + " - Art: " + artist + "     "
+            if len(artist) > 0: 
+                lcd.lcd_display_string(artist, 2)
             else:
-                title = "Alb: " + album + " - Tit: " + song_title + "     "
+                lcd.lcd_display_string((bitrate + ' ' * 20)[:20], 2)
+            title = album + " - " + current_title 
+            elapsed = strftime("%M:%S", gmtime(player["time"])) + "-" + strftime("%M:%S", gmtime(int(duration)))
+            if len(artist) > 20: 
+                title = "Alb: " + album + " - Tit: " + current_title + " - Art: " + artist + "     "
+            else:
+                title = "Alb: " + album + " - Tit: " + current_title + "     "
             max_car = len(title) - 20
             if decal > max_car:
                 decal = 0  
             lcd.lcd_display_string(title[decal:20 + decal], 3)
             
-            lcd.lcd_display_string("T " + track_pos + " " + elapsed, 4)
+            lcd.lcd_display_string("" + track_pos + " " + elapsed, 4)
             
             decal = decal + 1
         last_song = song
@@ -208,11 +237,20 @@ while True:
     else:
         # Just a clock !
         today = datetime.today()
-        lcd.lcd_display_string(today.strftime("%d/%m/%Y  %H:%M:%S"), 1)
-        lcd.lcd_display_string(" ", 2)
-        lcd.lcd_display_string("s=" + args.server, 3)
-        if len(players) > 0:
-            lcd.lcd_display_string("Players count: " + str(len(players)), 4)
+        if type(server_status) is dict:
+            lcd.lcd_display_string(today.strftime("%d/%m/%Y  %H:%M:%S"), 1)
+            lcd.lcd_display_string("LMS v" + server_status["result"]["version"],2)
+            lcd.lcd_display_string("" + args.server, 3)
+            if players is not None:
+                if len(players) > 0:
+                    lcd.lcd_display_string("Players count: " + str(len(players)), 4)
+                else:
+                    lcd.lcd_display_string("Player not found!", 4)
+                sleep(.1)
+            else:
+                lcd.lcd_display_string("No player",4)
         else:
-            lcd.lcd_display_string("Player not found!", 4)
-        sleep(.1)
+            lcd.lcd_display_string(today.strftime("%d/%m/%Y  %H:%M"), 1)
+            lcd.lcd_display_string("LMS not connected on",2)
+            lcd.lcd_display_string(args.server, 3)
+            lcd.lcd_display_string("no player", 4)
