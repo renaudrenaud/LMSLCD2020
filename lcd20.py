@@ -4,6 +4,9 @@ RC 2020-01-15
 
 To debug with codium we need root for LCD Access:
 sudo codium --user-data-dir="~/.vscode-root"
+
+2021-03-21 V 1.0.1: - better volume management
+                    - added params playername and displaymode
 """
 
 import argparse
@@ -17,7 +20,7 @@ from typing import ChainMap
 from lmsmanager import LMS_SERVER
 import platform
 
-def getPlayersInfo()->dict: 
+def getPlayersInfo(playername:str="")->dict: 
     """
     Grab the information for the first player playing music
 
@@ -31,9 +34,12 @@ def getPlayersInfo()->dict:
         players = myServer.cls_players_list()
         for player in players:
             # print(player["name"])
-            if player["isplaying"] == 1:
+            if playername == player['name']:
+                return player, players
+            elif player["isplaying"] == 1 and playername == "":
                 return player, players
     except Exception  as err:
+        print(err)
         return None, None 
     
     return None, players
@@ -76,12 +82,16 @@ description = "LMS API Requester"
 server_help = "ip and port for the server. something like 192.168.1.192:9000"
 lcd_help = "LCD address something like 0x3f"
 i2c_help = "i2cdetect port, 0 or 1, 0 for Orange Pi Zero, 1 for Rasp > V2"
+display_mode_help = "set to volume to show volume"
+player_name_help = "player name to lock the LCD on it"
 
 parser = argparse.ArgumentParser(description = description)
 parser.add_argument("-s","--server", type=str, default="192.168.1.192:9000", help = server_help)
 parser.add_argument("-l","--lcd", type=lambda x: int(x, 0), default=0x3f, help = lcd_help)
 parser.add_argument("-i","--i2cport", type=int, default=1, help = i2c_help)
 parser.add_argument("-v","--virtuallcd", type=str, default="no", help = lcd_help)
+parser.add_argument("-d","--displaymode", type=str, default="", help = display_mode_help)
+parser.add_argument("-p","--playername",type=str, default="", help = player_name_help)
 
 args = parser.parse_args()
 
@@ -99,7 +109,6 @@ else:
     lcd.lcd_display_string("view/audiofolies",4)
     sleep(4)
 
-
 myServer = LMS_SERVER(args.server)
 server_status = myServer.cls_server_status()
 
@@ -114,37 +123,46 @@ decal = 0
 song_info = None
 mixer_volume = 0
 change_volume = False
-sleep_duration = 0.6
+sleep_duration = 0.2
+start_volume_date = 0
 
 while True:
-    seconds = time()
     today = datetime.today()
     if today.second == 0:
         server_status = myServer.cls_server_status()
+    if change_volume is False:
+        player_info, players = getPlayersInfo(args.playername)
 
     player_info, players = getPlayersInfo()
-    if player_info is not None and type(server_status) is dict:
-        # sec = int(today.strftime("%S"))
-        if runner == "+":
-            runner = "*"
-        else:
-            runner = "+"
-                        
+    if player_info is not None and player_info['isplaying'] ==1 and type(server_status) is dict:
+
         player = myServer.cls_player_current_title_status(player_info['playerid'])
-        if player["mixer volume"] != mixer_volume:
+        if player["mixer volume"] != mixer_volume or change_volume is True:
             if mixer_volume == 0:
                 mixer_volume = player["mixer volume"]
             else:
+                if player["mixer volume"] != mixer_volume:
+                    start_volume_date = datetime.now()
+                
                 mixer_volume = player["mixer volume"]
-                lcd.lcd_display_string("Volume " + str(mixer_volume) + " /100" , 2)
-                sleep(0.2)
-                change_volume = True
+                
+                if change_volume is False:
+                    start_volume_date = datetime.now()  
+                    change_volume = True
+                    old_sleep_duration = sleep_duration
+                    sleep_duration = 0
+                
+                else:
+                    if (datetime.now() - start_volume_date).seconds > 3:
+                        change_volume = False
+                        start_volume_date = 0
+                        sleep_duration = old_sleep_duration
         else:
             change_volume = False
 
         song_index = int(player["playlist_cur_index"]) 
         song = player["playlist_loop"][song_index]
-            
+
         if int(song["id"]) != 0:
             # When id is positive, it comes from LMS database
             if (song_info is None or song["id"] != song_info["songinfo_loop"][0]["id"]) or int(song["id"]) < 0:
@@ -179,8 +197,10 @@ while True:
                     decal1 = 0
                     decal2 = 0
 
-        if change_volume == True:
-            pass
+        if args.displaymode == "volume" and player["time"] > 15 or change_volume == True:
+            lcd.lcd_display_string("Vol" + chr(255) * int(mixer_volume / 10) + chr(95) * (10 -(int(mixer_volume / 10))) + str(mixer_volume)  , 1)
+            lcd.lcd_display_string(("B:" + samplesize + " - F:" + samplerate + ' ' * 20)[:16], 2)
+            sleep(sleep_duration)
         elif player["time"] < 3:
             # When track time is less then 3 seconds it means a new song
             lcd.lcd_display_string(player['player_name'], 1)
@@ -219,7 +239,11 @@ while True:
             else:
                 lcd.lcd_display_string((bitrate + ' ' * 20)[:20], 2)
             title = album + " - " + current_title 
-            elapsed = strftime("%M:%S", gmtime(player["time"])) + "-" + strftime("%M:%S", gmtime(int(duration)))
+            if int(duration) > 0:
+                elapsed = strftime("%M:%S", gmtime(player["time"])) + "-" + strftime("%M:%S", gmtime(int(duration)))
+            else:
+                elapsed = strftime("%M:%S", gmtime(player["time"]))
+
             if len(artist) > 20: 
                 title = "Alb: " + album + " - Tit: " + current_title + " - Art: " + artist + "     "
             else:
