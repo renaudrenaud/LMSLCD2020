@@ -32,7 +32,7 @@ parser.add_argument("-s","--server", type=str, default="192.168.1.192:9000", hel
 parser.add_argument("-l","--lcd", type=lambda x: int(x, 0), default=0x3f, help = lcd_help)
 parser.add_argument("-i","--i2cport", type=int, default=1, help = i2c_help)
 parser.add_argument("-v","--virtuallcd", type=str, default="no", help = lcd_help)
-parser.add_argument("-d","--displaymode", type=str, default="volume", help = display_mode_help)
+parser.add_argument("-d","--displaymode", type=str, default="", help = display_mode_help)
 parser.add_argument("-p","--playername",type=str, default="", help = player_name_help)
 
 args = parser.parse_args()
