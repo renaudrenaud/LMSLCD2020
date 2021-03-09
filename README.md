@@ -11,3 +11,25 @@ I also wanted some things in the project:
 
 ## Main problem
 I do not know how to have easy to understand help on the LMS API.
+
+## Answer
+Read the lmsmanager.py script to grab some information.
+
+
+## I have 2 lines 16 char LCD
+
+Congratulations! run the script testLCD.py
+-i for the i2c port, ie: 0 for old Raspberry or Orange Pi Zero, 1 for new Raspberry (with 40 GPIO pins), 3 for the Orange Pi Zero 2
+-l for the LCD address grabbed with i2cdetect
+-d for diplay "volume", usefull for the 16x2
+-p for player, indicating your LCD must stay on the same player, if not, LCD shows the current playing player
+-s for server, indicates the LMS SERVER ip adress, ie: 192.168.1.192 assuming port is 9000 
+
+Some example:
+
+python3 /home/orangepi/sources/LMSLCD2020-main/testLCD.py -i 3 -l 0x27 -d volume -p OPZ2_SU8
+
+## Ho No: I have a 4 lines 20 chars!
+No problem, use the same syntax, changing the script name
+
+python3 /home/orangepi/sources/LMSLCD2020-main/lcd20.py -i 3 -l 0x27 -d volume -p OPZ2_SU8
