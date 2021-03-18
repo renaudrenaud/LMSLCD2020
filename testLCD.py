@@ -5,10 +5,12 @@ RC 2020-01-15
 To debug with codium we need root for LCD Access:
 sudo codium --user-data-dir="~/.vscode-root"
 
-2020-03-18 V1.2.0: add sleep in mm:ss
+2020-03-18 V1.2.0: add 
+                    - sleep in mm:ss
+                    - rescan status
 2021-03-15 v1.1.0: add the "type" format ie: aac or flc or dsf...
 2021-03-21 v1.0.1: - better volume management
-                    - remove spaces for track on track, not required and we have only 16 char!
+                   - remove spaces for track on track, not required and we have only 16 char!
 """
 
 import argparse
@@ -134,11 +136,16 @@ while True:
             player_info, players = get_players_info(args.playername)
 
     if args.displaymode != "clock" and player_info is not None and player_info['isplaying'] ==1 and type(server_status) is dict:
-        # sec = int(today.strftime("%S"))
-        if runner == "+":
-            runner = "*"
+        if my_server.cls_server_is_scanning():
+            if runner != "S":
+                runner = "S"
+            else:
+                runner = "s"
         else:
-            runner = "+"
+            if runner != "*":
+                runner = "*"
+            else:
+                runner = "+"
                         
         player = my_server.cls_player_current_title_status(player_info['playerid'])
 
@@ -245,9 +252,14 @@ while True:
             else:
                 lcd.lcd_display_string(today.strftime("%d/%m/%y  %H:%M") + runner, 1)
             
-            title = album + " - " + song_title 
             
-            title = "Alb: " + album + " - Tit: " + song_title + " (" + track_pos + ") - Art: " + artist
+            if my_server.cls_server_is_scanning():
+                scan = my_server.cls_server_scanning_status()
+                title = "scaning " + scan['steps'] + " " + scan['totaltime'] + "...  "
+            else:
+                title = album + " - " + song_title 
+                title = "Alb: " + album + " - Tit: " + song_title + " (" + track_pos + ") - Art: " + artist
+            
             max_car = len(title) - 16
             if decal > max_car:
                 decal = 0  
