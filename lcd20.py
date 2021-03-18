@@ -5,8 +5,11 @@ RC 2020-01-15
 To debug with codium we need root for LCD Access:
 sudo codium --user-data-dir="~/.vscode-root"
 
-2021-03-21 V 1.0.1: - better volume management
-                    - added params playername and displaymode
+2021-03-18 v1.3.0: add sleep in mm:ss when required for the player
+2021-03-15 v1.2.0: add the "type" format ie: aac or flc or dsf...
+2021-03-10 v1.1.1: code cleaning
+2021-03-09 v1.1.0: - better volume management
+                   - added params playername and displaymode
 """
 
 import argparse
@@ -17,10 +20,10 @@ from time import time
 from time import strftime
 from time import gmtime
 from typing import ChainMap
-from lmsmanager import LMS_SERVER
+from lmsmanager import LmsServer
 import platform
 
-def getPlayersInfo(playername:str="")->dict: 
+def get_players_info(playername:str="")->dict: 
     """
     Grab the information for the first player playing music
 
@@ -28,10 +31,10 @@ def getPlayersInfo(playername:str="")->dict:
         None
 
     Returns:
-        dict: LMS Player
+        dict, dicts: Player, LMS Players
     """
     try:
-        players = myServer.cls_players_list()
+        players = my_server.cls_players_list()
         for player in players:
             # print(player["name"])
             if playername == player['name']:
@@ -75,14 +78,16 @@ def screen_lms_info():
         lcd.lcd_display_string("no player.",4)
     else:
         server = server_status["result"]
-        lcd.lcd_display_string("LMS version:" + server["version"],3)
-        lcd.lcd_display_string("Players:" + str(server["player count"]),4)
+        lcd.lcd_display_string("LMS    : v" + server["version"],1)
+        lcd.lcd_display_string("Players: " + str(server["player count"]), 2)
+        lcd.lcd_display_string("Albums : " + str(server["info total albums"]), 3)
+        lcd.lcd_display_string("Songs  : " + str(server["info total songs"]), 4)
 
 description = "LMS API Requester"
 server_help = "ip and port for the server. something like 192.168.1.192:9000"
 lcd_help = "LCD address something like 0x3f"
 i2c_help = "i2cdetect port, 0 or 1, 0 for Orange Pi Zero, 1 for Rasp > V2"
-display_mode_help = "set to volume to show volume"
+display_mode_help = "set to volume or bitrate"
 player_name_help = "player name to lock the LCD on it"
 
 parser = argparse.ArgumentParser(description = description)
@@ -109,8 +114,8 @@ else:
     lcd.lcd_display_string("view/audiofolies",4)
     sleep(4)
 
-myServer = LMS_SERVER(args.server)
-server_status = myServer.cls_server_status()
+my_server = LmsServer(args.server)
+server_status = my_server.cls_server_status()
 
 screen_lms_info()
 
@@ -129,15 +134,15 @@ start_volume_date = 0
 while True:
     today = datetime.today()
     if today.second == 0:
-        server_status = myServer.cls_server_status()
+        server_status = my_server.cls_server_status()
     if change_volume is False:
-        player_info, players = getPlayersInfo(args.playername)
+        player_info, players = get_players_info(args.playername)
 
-    player_info, players = getPlayersInfo()
+    # player_info, players = get_players_info()
     if player_info is not None and player_info['isplaying'] ==1 and type(server_status) is dict:
 
-        player = myServer.cls_player_current_title_status(player_info['playerid'])
-        if player["mixer volume"] != mixer_volume or change_volume is True:
+        player = my_server.cls_player_current_title_status(player_info['playerid'])
+        if player is not None and player["mixer volume"] != mixer_volume or change_volume is True:
             if mixer_volume == 0:
                 mixer_volume = player["mixer volume"]
             else:
@@ -163,10 +168,11 @@ while True:
         song_index = int(player["playlist_cur_index"]) 
         song = player["playlist_loop"][song_index]
 
+
         if int(song["id"]) != 0:
             # When id is positive, it comes from LMS database
             if (song_info is None or song["id"] != song_info["songinfo_loop"][0]["id"]) or int(song["id"]) < 0:
-                song_info = myServer.cls_song_info(song["id"], player_info['playerid'])
+                song_info = my_server.cls_song_info(song["id"], player_info['playerid'])
                 if song != last_song:
                     album = get_from_loop(song_info["songinfo_loop"], "album")
                     # if "artist" in song_info["songinfo_loop"][4].keys():
@@ -186,8 +192,16 @@ while True:
                         current_title = song_title
 
                     samplesize = get_from_loop(song_info["songinfo_loop"], "samplesize")
+                    if samplesize == "":
+                        samplesize = 'N/A'
                     samplerate = get_from_loop(song_info["songinfo_loop"], "samplerate")
+                    if samplerate == "":
+                        samplerate = "N/A"
+                    else:
+                        samplerate = str(int(int(samplerate) / 1000)) + "k"
+
                     bitrate = get_from_loop(song_info["songinfo_loop"], "bitrate")
+                    file_format = get_from_loop(song_info["songinfo_loop"], "type")
 
                     duration = get_from_loop(song_info["songinfo_loop"],"duration") 
                     dur_hh_mm_ss = strftime("%H:%M:%S", gmtime(int(duration)))
@@ -198,7 +212,7 @@ while True:
                     decal2 = 0
 
         if args.displaymode == "volume" and player["time"] > 15 or change_volume == True:
-            lcd.lcd_display_string("Vol" + chr(255) * int(mixer_volume / 10) + chr(95) * (10 -(int(mixer_volume / 10))) + str(mixer_volume)  , 1)
+            lcd.lcd_display_string("Vol" + chr(255) * int(mixer_volume / 10) + chr(95) * (10 -(int(mixer_volume / 10))) + str(mixer_volume) + "%" , 1)
             lcd.lcd_display_string(("B:" + samplesize + " - F:" + samplerate + ' ' * 20)[:16], 2)
             sleep(sleep_duration)
         elif player["time"] < 3:
@@ -224,7 +238,7 @@ while True:
             lcd.lcd_display_string(album[decal2:20 + decal], 4)
       
         elif player["time"] < 15:
-            lcd.lcd_display_string(("B:" + samplesize + " - F:" + samplerate + ' ' * 20)[:20], 1)
+            lcd.lcd_display_string(("B:" + samplesize + " - F:" + samplerate + ' ' + file_format + ' ' * 20)[:20], 1)
             lcd.lcd_display_string((bitrate + ' ' * 20)[:20], 2)
             
         elif player["time"] < 20:
@@ -233,7 +247,11 @@ while True:
             lcd.lcd_display_string("tracks: " + track_pos, 2)
 
         else:
-            lcd.lcd_display_string(today.strftime("%d/%m/%y  %H:%M:%S"), 1)
+            if 'will_sleep_in' in player.keys():
+                lcd.lcd_display_string(strftime("sleep in %M:%S", gmtime(player['will_sleep_in'])), 1)
+            else:
+                lcd.lcd_display_string(today.strftime("%d/%m/%y  %H:%M:%S"), 1)
+            
             if len(artist) > 0: 
                 lcd.lcd_display_string(artist, 2)
             else:
