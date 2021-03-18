@@ -25,7 +25,7 @@ class LmsServer:
         """
 
         """
-        self.__version__ = "1.0.0"
+        self.__version__ = "1.1.0"
         self.URL = "http://" + serveur_ip + "/jsonrpc.js" 
 
     def cls_execute_request(self, payload)-> dict:
