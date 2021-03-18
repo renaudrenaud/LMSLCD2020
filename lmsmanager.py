@@ -15,7 +15,7 @@ from json import dumps
 class LmsServer:
     """
     This class tp grab informations from the LMS SERVER
-    2020-03-18: v1.1.0: add on / off method
+    2020-03-18: v1.1.0: add on / off method and sleep method
     2020-03-10: v1.0.1: cleaning code
     2020-03-09: v1.0.0: "Official" v1 version!
     2020-01-25: v0.0.1: starting
@@ -77,6 +77,19 @@ class LmsServer:
         else:
             print("Power on off value should be 0 or 1, received:" + str(on_off))
     
+    def cls_player_sleep(self, mac_player:str, seconds_before_sleep:int)->None:
+        """
+        player on or off
+
+        Input
+        : mac_player: str, the player mac address, ie: 5a:65:a2:33:80:79
+        : seconds_before_sleep: number of seconds before sleep
+        """
+
+        payload = '{"id": 0, "params": ["' + mac_player + '",["sleep","' + str(seconds_before_sleep) + '"]],"method": "slim.request"}'
+        self.cls_execute_request(payload)
+        print("Player goind to sleep in: " + str(seconds_before_sleep) + " seconds")
+    
     def cls_define_volume(self, mac_player:str, volume:int)->None:
         """
         Define the volume for specified player
@@ -121,6 +134,7 @@ class LmsServer:
         self.cls_execute_request(payload)
         print("Player stop:" + mac_player)
 
+    
     def cls_player_status(self, mac_player:str)->dict:
         """
         player status
@@ -202,11 +216,21 @@ if __name__ == "__main__":
     
     for player in players:
         if player["isplaying"] == 1:
-            myServer.cls_define_volume(player['playerid'], 60)
+            print("Waoo ->" + player['name'])
+            # define volume
+            myServer.cls_define_volume(player['playerid'], 20)
+            
+            # stop and play
             myServer.cls_player_stop(player['playerid'])
             myServer.cls_player_play(player['playerid'])
+            
+            # Off / On
             myServer.cls_player_on_off(player['playerid'], 0)
             myServer.cls_player_on_off(player['playerid'], 1)
+            
+            # Sleep in 10 seconds
+            myServer.cls_player_sleep(player['playerid'], 10)
+            
             print("Waoo ->" + player['name'])
             myServer.cls_player_status(player['playerid'])
             song = myServer.cls_player_current_title_status(player['playerid'])
