@@ -79,9 +79,8 @@ class lcd:
          try:
             self.lcd_device = i2c_lib.i2c_device(ad, port = i2c_port)
             self.lcd_write(0x03)
-            if self.lcd_device.error is False:
-               print("LCD in found " + str(ad))
-               break
+            print("LCD in found " + str(ad))
+            break
          except Exception as err:
             print("Error LCD >" + str(err))
             
