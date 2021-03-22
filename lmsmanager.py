@@ -15,7 +15,8 @@ from json import dumps
 class LmsServer:
     """
     This class to grab informations from the LMS SERVER
-    2020-03-18: v1.1.1: cleaning code (todo: doc)
+    2021-03-20: v1.1.2: mode docstring
+    2021-03-18: v1.1.1: cleaning code (todo: doc)
                             - dead method
                             - better naming
                         add methods
@@ -25,16 +26,16 @@ class LmsServer:
                             - server is scanning
                             - server scanning status
 
-    2020-03-10: v1.0.1: cleaning code
-    2020-03-09: v1.0.0: "Official" v1 version!
-    2020-01-25: v0.0.1: starting
+    2021-03-10: v1.0.1: cleaning code
+    2021-03-09: v1.0.0: "Official" v1 version!
+    2021-01-25: v0.0.1: starting
 
     """
     def __init__(self, serveur_ip):
         """
 
         """
-        self.__version__ = "1.1.0"
+        self.__version__ = "1.1.2"
         self.URL = "http://" + serveur_ip + "/jsonrpc.js" 
 
     def _cls_execute_request(self, payload)-> dict:
@@ -55,8 +56,12 @@ class LmsServer:
         Returns a list of players
         detected connected to the server
 
-        - Output
+        input
+        : None
+        
+        returns
         : players, list of dict
+        
         """
 
         payload='{"id": 0, "params": ["-",["players","0"]],"method":"slim.request"}'
@@ -75,9 +80,13 @@ class LmsServer:
         """
         player on or off
 
-        Input
+        input
         : mac_player: str, the player mac address, ie: 5a:65:a2:33:80:79
         : on_off: int, value between 0-1, 0=OFF, 1=ON
+
+
+        returns
+        : None
         """
         if on_off == 0 or on_off == 1:
             payload = '{"id": 0, "params": ["' + mac_player + '",["power","' + str(on_off) + '"]],"method": "slim.request"}'
@@ -90,9 +99,12 @@ class LmsServer:
         """
         player on or off
 
-        Input
+        input
         : mac_player: str, the player mac address, ie: 5a:65:a2:33:80:79
         : seconds_before_sleep: number of seconds before sleep
+
+        returns
+        : None
         """
 
         payload = '{"id": 0, "params": ["' + mac_player + '",["sleep","' + str(seconds_before_sleep) + '"]],"method": "slim.request"}'
@@ -103,9 +115,12 @@ class LmsServer:
         """
         Define the volume for specified player
 
-        Input
+        input
         : mac_player: str, the player mac address, ie: 5a:65:a2:33:80:79
         : volume: int, between 0-100
+
+        returns
+        : None
         """
         if volume > 100:
             volume = 100
@@ -121,7 +136,7 @@ class LmsServer:
         """
         player play!
 
-        Input
+        input
         : mac_player: str, the player mac address, ie: 5a:65:a2:33:80:79
         
         """
@@ -134,7 +149,7 @@ class LmsServer:
         """
         player stop!
 
-        Input
+        input
         : mac_player: str, the player mac address, ie: 5a:65:a2:33:80:79
         
         """
@@ -147,7 +162,7 @@ class LmsServer:
         """
         player on or off
 
-        Input
+        input
         : mac_player: str, the player mac address, ie: 5a:65:a2:33:80:79
         : skip: number of track(s) to skip, ie 1, -1, 4, -2...
         """
@@ -160,10 +175,10 @@ class LmsServer:
         """
         player status
 
-        Input
+        input
         : mac_player: str, the player mac address, ie: 5a:65:a2:33:80:79
 
-        Output
+        returns
         : dict: list of information about the player
         
         """
@@ -179,10 +194,10 @@ class LmsServer:
         """
         player status
 
-        Input
+        input
         : mac_player: str, the player mac address, ie: 5a:65:a2:33:80:79
 
-        Output
+        returns
         : dict: list of information about the player
         
         """
@@ -199,11 +214,11 @@ class LmsServer:
         """
         Grab info about song
 
-        Input
+        input
         : song_id; int
         : palyer_id: str as a MAC address, ie : "00:11:22:33:44:55:66"
 
-        Output:
+        returns
         : dict containing info
         """
         
@@ -215,6 +230,7 @@ class LmsServer:
     def cls_server_status(self)->dict:
         """
         grab the server status
+
         """
         payload = '{"id": 0,"params": ["-",["serverstatus",0,100]],"method": "slim.request"}'
         server_status = self._cls_execute_request(payload)
@@ -223,9 +239,9 @@ class LmsServer:
 
     def cls_server_is_scanning(self)->bool:
         """
-        Return:
-            : True if scanning
-            : False otherwise
+        returns:
+        : True if scanning
+        : False otherwise
         """
         payload = '{"id": 0, "params": ["00:00:00:00:00",["rescanprogress"]],"method": "slim.request"}'
         rescan = self._cls_execute_request(payload)
@@ -239,15 +255,18 @@ class LmsServer:
 
     def cls_server_scanning_status(self)->dict:
         """
-        Return:
-            : rescan["result"] dict if scanning, ie
-                {'discovering_directory': -1,
-                 'fullname': 'Discovering files/di...o/Musiques', 
-                 'info': '/mnt/syno/Musiques/J...and I.flac',
-                 'rescan': 1, 
-                 'steps': 'discovering_directory',
-                 'totaltime': '00:00:30'}
-            : if not scanning: {'rescan': 0}  
+        check the server to know the scan status
+        and returns the scan status
+
+        returns
+        : rescan["result"] dict if scanning, ie
+            {'discovering_directory': -1,
+                'fullname': 'Discovering files/di...o/Musiques', 
+                'info': '/mnt/syno/Musiques/J...and I.flac',
+                'rescan': 1, 
+                'steps': 'discovering_directory',
+                'totaltime': '00:00:30'}
+        if not scanning: {'rescan': 0}  
         """
         
         payload = '{"id": 0, "params": ["00:00:00:00:00",["rescanprogress"]],"method": "slim.request"}'
@@ -257,6 +276,12 @@ class LmsServer:
 
 
 if __name__ == "__main__":
+
+    print("--- LMS API Requester ---")
+    print("please use -s option to define your IP:PORT address")
+    print("ie: python lmsmanager.py -s 192.168.1.112:9000")
+    print("note: at least one player shoud be playing for demoing!")
+
     description = "LMS API Requester"
     server_help = "ip and port for the server. something like 192.168.1.192:9000"
     parser = argparse.ArgumentParser(description = description)

@@ -1,3 +1,11 @@
+"""
+This class to manage bus communication for the LCD
+We cannot raise an error when init
+the way to raise an error is to write 
+
+"""
+
+
 import smbus2
 from time import *
 
@@ -6,29 +14,41 @@ class i2c_device:
       self.addr = addr
       self.bus = smbus2.SMBus(port)
 
-# Write a single command
    def write_cmd(self, cmd):
-      self.bus.write_byte(self.addr, cmd)
-      sleep(0.0001)
+      """
+      write a single command
 
-# Write a command and argument
+      """
+      try:
+         self.bus.write_byte(self.addr, cmd)
+         sleep(0.0001)
+      except Exception as err:
+         raise TypeError ("LCD_Write >" + str(err))
+
    def write_cmd_arg(self, cmd, data):
+      """
+      write a command and argument
+
+      """
       self.bus.write_byte_data(self.addr, cmd, data)
       sleep(0.0001)
 
-# Write a block of data
    def write_block_data(self, cmd, data):
+      """ 
+      Write a block of data
+      """
       self.bus.write_block_data(self.addr, cmd, data)
       sleep(0.0001)
 
-# Read a single byte
    def read(self):
+      # Read a single byte
       return self.bus.read_byte(self.addr)
 
-# Read
+
    def read_data(self, cmd):
+      # Read
       return self.bus.read_byte_data(self.addr, cmd)
 
-# Read a block of data
    def read_block_data(self, cmd):
+      # Read a block of data
       return self.bus.read_block_data(self.addr, cmd)

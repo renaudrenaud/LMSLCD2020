@@ -241,6 +241,7 @@ class LCD20:
                     except:
                         pass
                     if len(artist) > 0: 
+
                         self.lcd.lcd_display_string(artist, 3)
                         self.lcd.lcd_display_string(album, 4) 
                     else:
@@ -256,6 +257,7 @@ class LCD20:
                         decal1 = 0
                     if decal2 > max_car1:
                         decal2 = 0
+                        
                     self.lcd.lcd_display_string(artist[decal1:20 + decal], 3)
                     self.lcd.lcd_display_string(album[decal2:20 + decal], 4)
             

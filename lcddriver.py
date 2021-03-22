@@ -72,8 +72,19 @@ class lcd:
       self.columns = columns
       self. lines = lines
 
-      self.lcd_device = i2c_lib.i2c_device(address, port = i2c_port)
+      address_list =  [int(address), int(0x27), int(0x3e), int(0x3f)]
 
+      for ad in address_list:
+         print("LCD trying with address " + str(ad))
+         try:
+            self.lcd_device = i2c_lib.i2c_device(ad, port = i2c_port)
+            self.lcd_write(0x03)
+            if self.lcd_device.error is False:
+               print("LCD in found " + str(ad))
+               break
+         except Exception as err:
+            print("Error LCD >" + str(err))
+            
       self.lcd_write(0x03)
       self.lcd_write(0x03)
       self.lcd_write(0x03)
@@ -120,3 +131,6 @@ class lcd:
    def lcd_clear(self):
       self.lcd_write(LCD_CLEARDISPLAY)
       self.lcd_write(LCD_RETURNHOME)
+
+   def lcd_off(self):
+      self.lcd_write(LCD_DISPLAYCONTROL | LCD_DISPLAYOFF)
