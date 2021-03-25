@@ -15,6 +15,9 @@ from json import dumps
 class LmsServer:
     """
     This class to grab informations from the LMS SERVER
+    2021-03-24: V1.2.0: adding 2 methods
+                            - cls_player_playlist_clear
+                            - cls_player_playlist_add
     2021-03-20: v1.1.2: mode docstring
     2021-03-18: v1.1.1: cleaning code (todo: doc)
                             - dead method
@@ -35,7 +38,7 @@ class LmsServer:
         """
 
         """
-        self.__version__ = "1.1.2"
+        self.__version__ = "1.2.0"
         self.URL = "http://" + serveur_ip + "/jsonrpc.js" 
 
     def _cls_execute_request(self, payload)-> dict:
@@ -209,20 +212,51 @@ class LmsServer:
             return player_status["result"]
         except:
             return None
+
+    def cls_player_playlist_clear(self, mac_player:str)->None:
+        """
+        Clear the playlist for the player
+        input
+        : player_id: str as a MAC address, ie : "00:11:22:33:44:55:66"
+
+        returns
+        : None
+
+        """
+        payload = '{"id": 0, "params": ["' + mac_player + '",["playlist","clear"]],"method": "slim.request"}'
+        self._cls_execute_request(payload)
+        print("clear playlist")
+
+    def cls_player_playlist_add(self, mac_player:str, playlist_name:str)->None:
+        """
+        Clear the playlist for the player
+        input
+        : mac_player: str as a MAC address, ie : "00:11:22:33:44:55:66"
+        : playlist_name: str, the mu3 file without extension, ie "pitsf_preset1"
+
+        returns
+        : None
+
+        """
+        payload = '{"id": 0, "params": ["' + mac_player + '",["playlist","add","' + playlist_name + '"]],"method": "slim.request"}'
+        self._cls_execute_request(payload)
+        print("add playlist" + playlist_name)
+
+
     
-    def cls_song_info(self, song_id, player_id):
+    def cls_song_info(self, song_id, mac_player:str)->dict:
         """
         Grab info about song
 
         input
         : song_id; int
-        : palyer_id: str as a MAC address, ie : "00:11:22:33:44:55:66"
+        : mac_player: str as a MAC address, ie : "00:11:22:33:44:55:66"
 
         returns
         : dict containing info
         """
         
-        payload = '{"id": 0,"params": ["' + player_id + '",["songinfo",0,100,"track_id:' + str(song_id) + '"]],"method": "slim.request"}'
+        payload = '{"id": 0,"params": ["' + mac_player + '",["songinfo",0,100,"track_id:' + str(song_id) + '"]],"method": "slim.request"}'
 
         song_info = self._cls_execute_request(payload)
         return song_info["result"]
@@ -313,8 +347,12 @@ if __name__ == "__main__":
             myServer.cls_player_on_off(player['playerid'], 0)
             myServer.cls_player_on_off(player['playerid'], 1)
             
+            # clear playlist
+            myServer.cls_player_playlist_clear(player['playerid'])
+
+
             # Sleep in 1000 seconds
-            myServer.cls_player_sleep(player['playerid'], 1000)
+            # myServer.cls_player_sleep(player['playerid'], 1000)
 
             myServer.cls_player_status(player['playerid'])
             song = myServer.cls_player_current_title_status(player['playerid'])
