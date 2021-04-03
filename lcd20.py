@@ -7,6 +7,8 @@ Depending on the OS we need root rights on i2c bus
 And to debug with codium we need root for LCD Access:
 sudo codium --user-data-dir="~/.vscode-root"
 
+2021-04-03 v2.1.0: TSJ Jazz has a fixed duration for their track with value = 0.875
+                    so the LCD was stucked on the first screen < 3 seconds!
 2021-03-21 v2.0.0: using a class now and supposely bullet proof
 2021-03-18 v1.3.0: add sleep in mm:ss when required for the player
 2021-03-15 v1.2.0: add the "type" format ie: aac or flc or dsf...
@@ -146,6 +148,7 @@ class LCD20:
         change_volume = False
         sleep_duration = 0.2
         start_volume_date = 0
+        previous_time = 0
 
         server_status = self.my_server.cls_server_status()
 
@@ -197,6 +200,9 @@ class LCD20:
                             artist = self.get_from_loop(song_info["songinfo_loop"], "artist")
                             if len(artist) == 0:
                                 artist = self.get_from_loop(song_info["songinfo_loop"], "albumartist")
+                            if len(artist) == 0:
+                                artist = song["title"]
+                            
                             song_title = self.get_from_loop(song_info["songinfo_loop"], "title")
                             if "current_title" in player.keys():
                                 current_title = player['current_title']
@@ -233,24 +239,21 @@ class LCD20:
                     self.lcd.lcd_display_string("Vol" + chr(255) * int(mixer_volume / 10) + chr(95) * (10 -(int(mixer_volume / 10))) + str(mixer_volume) + "%" , 1)
                     self.lcd.lcd_display_string(("B:" + samplesize + " - F:" + samplerate + ' ' * 20)[:16], 2)
                     sleep(sleep_duration)
-                elif player["time"] < 3:
+                elif player["time"] < 3 and player["time"] != previous_time:
                     # When track time is less then 3 seconds it means a new song
+                    previous_time = player["time"]
                     self.lcd.lcd_display_string(player['player_name'], 1)
-                    try:
-                        self.lcd.lcd_display_string(player['player_ip'].split(":")[0], 2)  
-                    except:
-                        pass
+                    self.lcd.lcd_display_string(player['player_ip'].split(":")[0], 2)  
                     if len(artist) > 0: 
-
                         self.lcd.lcd_display_string(artist, 3)
                         self.lcd.lcd_display_string(album, 4) 
                     else:
-                        self.lcd.lcd_display_string("LMS    : v" + server["version"],3)
-                        self.lcd.lcd_display_string("Players: " + str(server["player count"]), 4)
+                        self.lcd.lcd_display_string("LMS    : v" + server_status['result']["version"],3)
+                        self.lcd.lcd_display_string("Players: " + str(server_status['result']["player count"]), 4)
                 
                     sleep(2)     
 
-                elif player["time"] < 10:    
+                elif player["time"] < 10 and player["time"] != previous_time:    
                     max_car1 = len(artist) -20
                     # max_car2 = len(album) -20
                     if decal1 > max_car1:
@@ -261,11 +264,11 @@ class LCD20:
                     self.lcd.lcd_display_string(artist[decal1:20 + decal], 3)
                     self.lcd.lcd_display_string(album[decal2:20 + decal], 4)
             
-                elif player["time"] < 15:
+                elif player["time"] < 15 and player["time"] != previous_time:
                     self.lcd.lcd_display_string(("B:" + samplesize + " - F:" + samplerate + ' ' + file_format + ' ' * 20)[:20], 1)
                     self.lcd.lcd_display_string((bitrate + ' ' * 20)[:20], 2)
                     
-                elif player["time"] < 20:
+                elif player["time"] < 20 and player["time"] != previous_time:
 
                     self.lcd.lcd_display_string("durat-:" + dur_hh_mm_ss, 1)
                     self.lcd.lcd_display_string("tracks: " + track_pos, 2)
@@ -287,7 +290,7 @@ class LCD20:
                     if len(artist) > 0: 
                         self.lcd.lcd_display_string(artist, 2)
                     else:
-                        self.lcd.lcd_display_string((bitrate + ' ' * 20)[:20], 2)
+                        self.lcd.lcd_display_string(("bitrate: " + bitrate + ' ' * 20)[:20], 2)
                     title = album + " - " + current_title 
                     if int(duration) > 0:
                         elapsed = strftime("%M:%S", gmtime(player["time"])) + "-" + strftime("%M:%S", gmtime(int(duration)))
@@ -317,7 +320,7 @@ class LCD20:
                 # Just a clock !
                 today = datetime.today()
                 if type(server_status) is dict:
-                    self.lcd.lcd_display_string(today.strftime("%d/%m/%Y  %H:%M:%S"), 1)
+                    self.lcd.lcd_display_string(today.strftime("%d/%m/%Y %H:%M:%S"), 1)
                     self.lcd.lcd_display_string("LMS v" + server_status["result"]["version"],2)
                     if self.my_server.cls_server_is_scanning():
                         scan = self.my_server.cls_server_scanning_status()
@@ -335,7 +338,7 @@ class LCD20:
                     else:
                         self.lcd.lcd_display_string("No player",4)
                 else:
-                    self.lcd.lcd_display_string(today.strftime("%d/%m/%Y  %H:%M"), 1)
+                    self.lcd.lcd_display_string(today.strftime("%d/%m/%Y %H:%M"), 1)
                     self.lcd.lcd_display_string("LMS not connected on",2)
                     self.lcd.lcd_display_string(args.server, 3)
                     self.lcd.lcd_display_string("no player", 4)
