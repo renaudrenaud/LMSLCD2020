@@ -138,8 +138,9 @@ class LCD16:
         song_info = None
         mixer_volume = 0
         change_volume = False
-        sleep_duration = 0.2
+        sleep_duration = 0.5
         start_volume_date = 0
+        previous_time = 0
 
         server_status = self.my_server.cls_server_status()
 
@@ -201,18 +202,21 @@ class LCD16:
                             album = self.get_from_loop(song_info["songinfo_loop"], "album")
                             # if "artist" in song_info["songinfo_loop"][4].keys():
                             artist = self.get_from_loop(song_info["songinfo_loop"], "artist")
+
                             if len(artist) == 0:
                                 artist = self.get_from_loop(song_info["songinfo_loop"], "albumartist")
+                            if len(artist) == 0:
+                                artist = song["title"]
+
                             song_title = self.get_from_loop(song_info["songinfo_loop"], "title")
+                            current_title = ""
                             if "current_title" in player.keys():
                                 current_title = player['current_title']
-                            else:
-                                current_title = ""
                             
                             samplesize = self.get_from_loop(song_info["songinfo_loop"], "samplesize")
                             if samplesize == "":
-                                samplesize = 'N/A'
-
+                                samplesize = "N/A"
+                            
                             samplerate = self.get_from_loop(song_info["songinfo_loop"], "samplerate")
                             if samplerate == "":
                                 samplerate = "N/A"
@@ -234,8 +238,9 @@ class LCD16:
                     # lcd.lcd_display_string(("B:" + samplesize + " - F:" + samplerate + ' ' * 20)[:16], 2)
                     self.lcd.lcd_display_string(("B:" + samplesize + "-F:" + samplerate + ' ' + file_format + ' ' * 16)[:16], 2)
                     sleep(sleep_duration)
-                elif player["time"] < 3:
+                elif player["time"] < 3 and player["time"] != previous_time:
                     # When track time is less then 3 seconds it means a new song
+                    previous_time = player["time"]
                     self.lcd.lcd_display_string(player['player_name'], 1)
                     try:
                         self.lcd.lcd_display_string(player['player_ip'].split(":")[0], 2)   
@@ -244,7 +249,7 @@ class LCD16:
                     
                     sleep(2)     
 
-                elif player["time"] < 10:    
+                elif player["time"] < 10 and player["time"] != previous_time:    
                     max_car1 = len(artist) -16
                     max_car2 = len(album) -16
                     if decal1 > max_car1:
@@ -254,11 +259,11 @@ class LCD16:
                     self.lcd.lcd_display_string(artist[decal1:16 + decal], 1)
                     self.lcd.lcd_display_string(album[decal2:16 + decal], 2)
             
-                elif player["time"] < 15:
+                elif player["time"] < 15 and player["time"] != previous_time:
                     self.lcd.lcd_display_string(("B:" + samplesize + "-F:" + samplerate + ' ' + file_format + ' ' * 16)[:16], 1)
                     self.lcd.lcd_display_string((bitrate + ' ' * 16)[:16], 2)
                     
-                elif player["time"] < 20:
+                elif player["time"] < 20 and player["time"] != previous_time:
 
                     self.lcd.lcd_display_string("durat-:" + dur_hh_mm_ss, 1)
                     self.lcd.lcd_display_string("tracks: " + track_pos, 2)
@@ -273,8 +278,12 @@ class LCD16:
                         scan = self.my_server.cls_server_scanning_status()
                         title = "scaning " + scan['steps'] + " " + scan['totaltime'] + "...  "
                     else:
-                        title = album + " - " + song_title 
-                        title = "Alb: " + album + " - Tit: " + song_title + " (" + track_pos + ") - Art: " + artist
+                        title = track_pos + " Tit: " + song_title  
+                        if len(album) > 0:
+                            title = title + " - Alb: " + album  
+                        if len(artist) > 0:
+                            title = title + " - Art: " + artist  
+                        title = title + "  "
                     
                     max_car = len(title) - 16
                     if decal > max_car:
