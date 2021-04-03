@@ -5,7 +5,10 @@ RC 2020-01-15
 To debug with codium we need root for LCD Access:
 sudo codium --user-data-dir="~/.vscode-root"
 
-2020-03-18 V1.2.0: add 
+2021-04-03 v2.1.0: TSJ Jazz has a fixed duration for their track with value = 0.875
+                    so the LCD was stucked on the first screen < 3 seconds!
+2021-03-21 v2.0.0: using a class now and supposely bullet proof
+2021-03-18 V1.2.0: add 
                     - sleep in mm:ss
                     - rescan status
 2021-03-15 v1.1.0: add the "type" format ie: aac or flc or dsf...
