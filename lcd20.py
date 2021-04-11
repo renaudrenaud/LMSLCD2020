@@ -54,7 +54,7 @@ class LCD20:
             self.lcd = no_lcddriver.lcd(address = lcd, columns=20) 
         else:
             import lcddriver
-            self.lcd = lcddriver.lcd(address = lcd, columns=20)
+            self.lcd = lcddriver.lcd(address = lcd, columns=20, i2c_port=i2c_port)
             self.lcd.lcd_clear()
             self.lcd.lcd_display_string("      C&R ID ", 1)
             self.lcd.lcd_display_string("    Audiofolies" , 2)
