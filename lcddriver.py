@@ -83,7 +83,7 @@ class lcd:
             break
          except Exception as err:
             print("Error LCD >" + str(err))
-            
+
       self.lcd_write(0x03)
       self.lcd_write(0x03)
       self.lcd_write(0x03)

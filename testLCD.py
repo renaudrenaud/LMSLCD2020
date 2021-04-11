@@ -240,7 +240,8 @@ class LCD16:
                     self.lcd.lcd_display_string("Vol" + chr(255) * int(mixer_volume / 10) + chr(95) * (10 -(int(mixer_volume / 10))) + str(mixer_volume)  , 1)
                     # lcd.lcd_display_string(("B:" + samplesize + " - F:" + samplerate + ' ' * 20)[:16], 2)
                     self.lcd.lcd_display_string(("B:" + samplesize + "-F:" + samplerate + ' ' + file_format + ' ' * 16)[:16], 2)
-                    sleep(sleep_duration)
+                    
+                    
                 elif player["time"] < 3 and player["time"] != previous_time:
                     # When track time is less then 3 seconds it means a new song
                     previous_time = player["time"]
