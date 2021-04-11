@@ -5,6 +5,7 @@ RC 2020-01-15
 To debug with codium we need root for LCD Access:
 sudo codium --user-data-dir="~/.vscode-root"
 
+2021-04-11 v2.2.0: replace accented characters, LCD cannot print them
 2021-04-03 v2.1.0: TSJ Jazz has a fixed duration for their track with value = 0.875
                     so the LCD was stucked on the first screen < 3 seconds!
 2021-03-21 v2.0.0: using a class now and supposely bullet proof
@@ -26,7 +27,7 @@ from time import gmtime
 from typing import ChainMap
 from lmsmanager import LmsServer
 import platform
-
+import unicodedata
 
 class LCD16:
     """
@@ -235,6 +236,11 @@ class LCD16:
                             decal = 0
                             decal1 = 0
                             decal2 = 0
+
+                # remove accented chars, LCD cannot write them
+                artist = unicodedata.normalize('NFD', artist).encode('ascii', 'ignore').decode("utf-8")
+                album = unicodedata.normalize('NFD', album).encode('ascii', 'ignore').decode("utf-8")
+                song_title = unicodedata.normalize('NFD', song_title).encode('ascii', 'ignore').decode("utf-8")
 
                 if self.display_mode == "volume" or change_volume == True:
                     self.lcd.lcd_display_string("Vol" + chr(255) * int(mixer_volume / 10) + chr(95) * (10 -(int(mixer_volume / 10))) + str(mixer_volume)  , 1)

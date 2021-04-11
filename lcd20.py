@@ -7,6 +7,7 @@ Depending on the OS we need root rights on i2c bus
 And to debug with codium we need root for LCD Access:
 sudo codium --user-data-dir="~/.vscode-root"
 
+2021-04-11 v2.2.0: replace accented characters, LCD cannot print them
 2021-04-03 v2.1.0: TSJ Jazz has a fixed duration for their track with value = 0.875
                     so the LCD was stucked on the first screen < 3 seconds!
 2021-03-21 v2.0.0: using a class now and supposely bullet proof
@@ -27,7 +28,7 @@ from time import gmtime
 from typing import ChainMap
 from lmsmanager import LmsServer
 import platform
-
+import unidecode
 
 class LCD20:
     """
@@ -253,6 +254,11 @@ class LCD20:
                 
                     sleep(2)     
 
+                # remove accented chars, LCD cannot write them
+                artist = unicodedata.normalize('NFD', artist).encode('ascii', 'ignore').decode("utf-8")
+                album = unicodedata.normalize('NFD', album).encode('ascii', 'ignore').decode("utf-8")
+                song_title = unicodedata.normalize('NFD', song_title).encode('ascii', 'ignore').decode("utf-8")
+                
                 elif player["time"] < 10 and player["time"] != previous_time:    
                     max_car1 = len(artist) -20
                     # max_car2 = len(album) -20
