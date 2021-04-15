@@ -5,6 +5,7 @@ RC 2020-01-15
 To debug with codium we need root for LCD Access:
 sudo codium --user-data-dir="~/.vscode-root"
 
+2021-04-15 v2.3.0: print the number of players on 1 car enf of line 1
 2021-04-11 v2.2.0: replace accented characters, LCD cannot print them
 2021-04-03 v2.1.0: TSJ Jazz has a fixed duration for their track with value = 0.875
                     so the LCD was stucked on the first screen < 3 seconds!
@@ -145,12 +146,13 @@ class LCD16:
         sleep_duration = 0.5
         start_volume_date = 0
         previous_time = 0
+        player_pos = 0
+        players_str="players"
 
         server_status = self.my_server.cls_server_status()
 
         while True:
             today = datetime.today()
-
             if self.display_mode != "clock":
                 if today.second == 0:
                     server_status = self.my_server.cls_server_status()
@@ -213,9 +215,9 @@ class LCD16:
                                 artist = song["title"]
 
                             song_title = self.get_from_loop(song_info["songinfo_loop"], "title")
-                            current_title = ""
-                            if "current_title" in player.keys():
-                                current_title = player['current_title']
+                            # current_title = ""
+                            # if "current_title" in player.keys():
+                                # current_title = player['current_title']
                             
                             samplesize = self.get_from_loop(song_info["songinfo_loop"], "samplesize")
                             if samplesize == "":
@@ -261,7 +263,7 @@ class LCD16:
 
                 elif player["time"] < 10 and player["time"] != previous_time:    
                     max_car1 = len(artist) -16
-                    max_car2 = len(album) -16
+                    # max_car2 = len(album) -16
                     if decal1 > max_car1:
                         decal1 = 0
                     if decal2 > max_car1:
@@ -280,10 +282,19 @@ class LCD16:
 
                 else:
                     if 'will_sleep_in' in player.keys():
+                        # sleep function is activated!
                         self.lcd.lcd_display_string(strftime("sleep in %M:%S", gmtime(player['will_sleep_in'])), 1)
                     else:
-                        self.lcd.lcd_display_string(today.strftime("%d/%m/%y  %H:%M") + runner, 1)
-                    
+                        # some code to print number of players on 1 char!
+                        if player_pos < len(players_str):
+                            player_count = players_str[player_pos]
+                            player_pos = player_pos + 1
+                        else:
+                            player_count = str(len(players))
+                            player_pos = 0 
+
+                        self.lcd.lcd_display_string(today.strftime("%d/%m/%y %H:%M") + runner + player_count, 1)
+                        
                     if self.my_server.cls_server_is_scanning():
                         scan = self.my_server.cls_server_scanning_status()
                         title = "scaning " + scan['steps'] + " " + scan['totaltime'] + "...  "
