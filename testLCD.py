@@ -5,6 +5,7 @@ RC 2020-01-15
 To debug with codium we need root for LCD Access:
 sudo codium --user-data-dir="~/.vscode-root"
 
+2021-05-16 v2.3.1: search IP and print at launch
 2021-04-15 v2.3.0: print the number of players on 1 car enf of line 1
 2021-04-11 v2.2.0: replace accented characters, LCD cannot print them
 2021-04-03 v2.1.0: TSJ Jazz has a fixed duration for their track with value = 0.875
@@ -27,6 +28,7 @@ from time import strftime
 from time import gmtime
 from typing import ChainMap
 from lmsmanager import LmsServer
+import socket
 import platform
 import unicodedata
 
@@ -42,7 +44,7 @@ class LCD16:
                  display_mode: str,
                  player_name:str):
     
-        self.__version__ = "v2.0.0"
+        self.__version__ = "v2.3.1"
         
         self.player_name = player_name
         self.display_mode = display_mode
@@ -59,8 +61,10 @@ class LCD16:
             self.lcd.lcd_clear()
             self.lcd.lcd_display_string("      C&R ID ", 1)
             self.lcd.lcd_display_string("    Audiofolies" , 2)
-
             sleep(2)
+            self.lcd.lcd_display_string("Local IP:", 1)
+            self.lcd.lcd_display_string(self.get_my_ip(), 2)
+            sleep(5)
 
         self.screen_lms_info()
         sleep(3)
@@ -111,6 +115,18 @@ class LCD16:
 
         return ret
 
+    def get_my_ip(self)-> str:
+        """
+        Find my IP address
+        ret: str, the ip address like 192.168.1.51
+        """
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    
+    
     def screen_lms_info(self):
         """
         Print some info on the LCD 
@@ -286,12 +302,15 @@ class LCD16:
                         self.lcd.lcd_display_string(strftime("sleep in %M:%S", gmtime(player['will_sleep_in'])), 1)
                     else:
                         # some code to print number of players on 1 char!
-                        if player_pos < len(players_str):
+                        if player_pos < len(players_str) and player_pos >= 0:
                             player_count = players_str[player_pos]
+                            player_pos = player_pos + 1
+                        elif player_pos >= -5 and player_pos < len(players_str):
+                            player_count = str(len(players))
                             player_pos = player_pos + 1
                         else:
                             player_count = str(len(players))
-                            player_pos = 0 
+                            player_pos = - 5 
 
                         self.lcd.lcd_display_string(today.strftime("%d/%m/%y %H:%M") + runner + player_count, 1)
                         
@@ -339,7 +358,7 @@ if __name__ == "__main__":
     player_name_help = "player name to lock the LCD on it"
 
     parser = argparse.ArgumentParser(description = description)
-    parser.add_argument("-s","--server", type=str, default="192.168.1.192:9000", help = server_help)
+    parser.add_argument("-s","--server", type=str, default="192.168.1.193:9000", help = server_help)
     parser.add_argument("-l","--lcd", type=lambda x: int(x, 0), default=0x3f, help = lcd_help)
     parser.add_argument("-i","--i2c_port", type=int, default=1, help = i2c_help)
     parser.add_argument("-v","--virtual_lcd", type=str, default="no", help = lcd_help)
