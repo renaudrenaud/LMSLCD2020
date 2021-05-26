@@ -17,7 +17,7 @@ class TSJAZZ_TITLE:
     Grab title and artist from main page
     of tsfjazz website
     """
-
+    @staticmethod
     def cls_get_title_name():
         """
         returns
@@ -51,7 +51,6 @@ class TSJAZZ_TITLE:
 
 
 if __name__ == "__main__":
-    TSF = TSJAZZ_TITLE
-    title, artist = TSF.cls_get_title_name()
+    title, artist = TSJAZZ_TITLE.cls_get_title_name()
     print("tit: " + title)
     print("art: " + artist)

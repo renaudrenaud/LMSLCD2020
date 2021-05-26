@@ -7,7 +7,7 @@ the way to raise an error is to write
 
 
 import smbus2
-from time import *
+from time import sleep
 
 class i2c_device:
    def __init__(self, addr, port=1):
