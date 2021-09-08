@@ -23,7 +23,7 @@ Congratulations! run the script testLCD.py
 * -l for the LCD address grabbed with i2cdetect
 * -d for diplay "volume", usefull for the 16x2
 * -p for player, indicating your LCD must stay on the same player, if not, LCD shows the current playing player
-* -s for server, indicates the LMS SERVER ip adress, ie: 192.168.1.192 assuming port is 9000 
+* -s for server, indicates the LMS SERVER ip adress, ie: **192.168.1.192:9000** assuming port is 9000 
 
 ## Seeems LCD is not ok
 
