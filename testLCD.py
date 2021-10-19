@@ -5,6 +5,7 @@ RC 2020-01-15
 To debug with codium we need root for LCD Access:
 sudo codium --user-data-dir="~/.vscode-root"
 
+2021-11-19 v2.3.2: take in account player with no mixer volume! 
 2021-05-16 v2.3.1: search IP and print at launch
 2021-04-15 v2.3.0: print the number of players on 1 car enf of line 1
 2021-04-11 v2.2.0: replace accented characters, LCD cannot print them
@@ -189,30 +190,32 @@ class LCD16:
                                 
                 player = self.my_server.cls_player_current_title_status(player_info['playerid'])
 
-                if player["mixer volume"] != mixer_volume or change_volume is True:
-                    if mixer_volume == 0:
-                        mixer_volume = player["mixer volume"]
-                    else:
-                        if player["mixer volume"] != mixer_volume:
-                            start_volume_date = datetime.now()
-                        
-                        mixer_volume = player["mixer volume"]
-                        
-                        if change_volume is False:
-                            start_volume_date = datetime.now()  
-                            change_volume = True
-                            old_sleep_duration = sleep_duration
-                            sleep_duration = 0
-                        
+                if "mixer_volume" in player:
+                    if player["mixer volume"] != mixer_volume or change_volume is True:
+                        if mixer_volume == 0:
+                            mixer_volume = player["mixer volume"]
                         else:
-                            if (datetime.now() - start_volume_date).seconds > 3:
-                                change_volume = False
-                                start_volume_date = 0
-                                sleep_duration = old_sleep_duration
+                            if player["mixer volume"] != mixer_volume:
+                                start_volume_date = datetime.now()
+                            
+                            mixer_volume = player["mixer volume"]
+                            
+                            if change_volume is False:
+                                start_volume_date = datetime.now()  
+                                change_volume = True
+                                old_sleep_duration = sleep_duration
+                                sleep_duration = 0
+                            
+                            else:
+                                if (datetime.now() - start_volume_date).seconds > 3:
+                                    change_volume = False
+                                    start_volume_date = 0
+                                    sleep_duration = old_sleep_duration
 
+                    else:
+                        change_volume = False
                 else:
                     change_volume = False
-            
                 song_index = int(player["playlist_cur_index"]) 
                 song = player["playlist_loop"][song_index]
             
@@ -361,7 +364,7 @@ if __name__ == "__main__":
     parser.add_argument("-s","--server", type=str, default="192.168.1.193:9000", help = server_help)
     parser.add_argument("-l","--lcd", type=lambda x: int(x, 0), default=0x3f, help = lcd_help)
     parser.add_argument("-i","--i2c_port", type=int, default=1, help = i2c_help)
-    parser.add_argument("-v","--virtual_lcd", type=str, default="no", help = lcd_help)
+    parser.add_argument("-v","--virtual_lcd", type=str, default="yes", help = lcd_help)
     parser.add_argument("-d","--display_mode", type=str, default="", help = display_mode_help)
     parser.add_argument("-p","--player_name",type=str, default="", help = player_name_help)
 
