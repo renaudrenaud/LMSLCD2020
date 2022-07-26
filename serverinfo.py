@@ -5,6 +5,7 @@ Specifically for the SERVER
 - the mount point and if something is here
 - players IP adresses
 
+2022-07-26 v1.1.0: code now manages when no player
 2021-12-26 v1.0.0: first lines
 """
 
@@ -71,12 +72,17 @@ class LCD16:
         
         try:
             players = self.my_server.cls_players_list()
-            for player in players:
-                if playername == player['name']:
-                    return player, players
-                elif player["isplaying"] == 1 and playername == "":
-                    return player, players
+            if players == []:
+                # players List is empty
+                print("zero player found!")
+            else:
+                for player in players:
+                    if playername == player['name']:
+                        return player, players
+                    elif player["isplaying"] == 1 and playername == "":
+                        return player, players
         except Exception  as err:
+            print("Error in players detection:")
             print(err)
             return None, None 
         
