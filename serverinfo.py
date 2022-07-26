@@ -5,6 +5,7 @@ Specifically for the SERVER
 - the mount point and if something is here
 - players IP adresses
 
+2022-07-26 v1.2.0: code now manages when booting and ip = 0.0.0.0  
 2022-07-26 v1.1.0: code now manages when no player
 2021-12-26 v1.0.0: first lines
 """
@@ -113,11 +114,16 @@ class LCD16:
         Find my IP address
         ret: str, the ip address like 192.168.1.51
         """
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        ip = s.getsockname()[0]
-        s.close()
-        return ip
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            ip = s.getsockname()[0]
+            s.close()
+            return ip
+        except Exception as err:
+            print("Error in get_my_ip:")
+            print(err)
+            return "0.0.0.0"
     
     
     def screen_lms_info(self):
@@ -160,6 +166,9 @@ class LCD16:
         server_status = self.my_server.cls_server_status()
 
         while True:
+            if self.local_IP == "0.0.0.0":
+                self.local_IP = self.get_my_ip()
+            
             for i in range (10):
                 players = self.get_players_info()
                 today = datetime.today()
