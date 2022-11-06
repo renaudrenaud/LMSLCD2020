@@ -365,7 +365,7 @@ if __name__ == "__main__":
     parser.add_argument("-s","--server", type=str, default="192.168.1.120:9000", help = server_help)
     parser.add_argument("-l","--lcd", type=lambda x: int(x, 0), default=0x3f, help = lcd_help)
     parser.add_argument("-i","--i2c_port", type=int, default=1, help = i2c_help)
-    parser.add_argument("-v","--virtual_lcd", type=str, default="yes", help = lcd_help)
+    parser.add_argument("-v","--virtual_lcd", type=str, default="", help = lcd_help)
     parser.add_argument("-d","--display_mode", type=str, default="volume", help = display_mode_help)
     parser.add_argument("-p","--player_name",type=str, default="", help = player_name_help)
 
