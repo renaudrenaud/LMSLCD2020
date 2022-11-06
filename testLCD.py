@@ -5,6 +5,7 @@ RC 2020-01-15
 To debug with codium we need root for LCD Access:
 sudo codium --user-data-dir="~/.vscode-root"
 
+2022-11-06 v2.3.3: fix: error with "mixer_volume" corrected in "mixer volume"
 2021-11-19 v2.3.2: take in account player with no mixer volume! 
 2021-05-16 v2.3.1: search IP and print at launch
 2021-04-15 v2.3.0: print the number of players on 1 car enf of line 1
@@ -190,7 +191,7 @@ class LCD16:
                                 
                 player = self.my_server.cls_player_current_title_status(player_info['playerid'])
 
-                if "mixer_volume" in player:
+                if "mixer volume" in player:
                     if player["mixer volume"] != mixer_volume or change_volume is True:
                         if mixer_volume == 0:
                             mixer_volume = player["mixer volume"]
@@ -361,11 +362,11 @@ if __name__ == "__main__":
     player_name_help = "player name to lock the LCD on it"
 
     parser = argparse.ArgumentParser(description = description)
-    parser.add_argument("-s","--server", type=str, default="192.168.1.193:9000", help = server_help)
+    parser.add_argument("-s","--server", type=str, default="192.168.1.120:9000", help = server_help)
     parser.add_argument("-l","--lcd", type=lambda x: int(x, 0), default=0x3f, help = lcd_help)
     parser.add_argument("-i","--i2c_port", type=int, default=1, help = i2c_help)
-    parser.add_argument("-v","--virtual_lcd", type=str, default="no", help = lcd_help)
-    parser.add_argument("-d","--display_mode", type=str, default="", help = display_mode_help)
+    parser.add_argument("-v","--virtual_lcd", type=str, default="yes", help = lcd_help)
+    parser.add_argument("-d","--display_mode", type=str, default="volume", help = display_mode_help)
     parser.add_argument("-p","--player_name",type=str, default="", help = player_name_help)
 
     args = parser.parse_args()
