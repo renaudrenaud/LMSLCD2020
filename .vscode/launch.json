@@ -1,0 +1,23 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python : fichier actif",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": ["-i=1", "-d=volume", "-v=yes", "-s=192.168.1.120:9000"],
+            "env":{"LMS_SERVER":"192.168.1.120:9000",
+                    "LCD":"0x3F",
+                    "I2C_PORT":"1",
+                    "VIRTUAL_LCD":"True",
+                    "DIPLAY_MODE":"volume",
+                    "PLAYER_NAME":""}
+        }
+    ]
+}

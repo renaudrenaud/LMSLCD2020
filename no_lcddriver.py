@@ -1,8 +1,10 @@
 """
-LCD driver.
+NO LCD driver
 
-- Do not forget to instantiate with the address value using sudo i2cdetect -y 1
- 
+When you run the main app with -v=yes it means you don't have a LCD 
+driver installed. This is a stub to allow the app to run without it
+
+
 """
 from time import sleep
 
@@ -19,6 +21,7 @@ class lcd:
         Ouput
         - None
         """
+        self.__version__ = "v1.0.0"
         print("No lcd driver initialized!")
         self.string1 = ""
         self.string2 = ""

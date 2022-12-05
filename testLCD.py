@@ -46,7 +46,7 @@ class LCD16:
                  display_mode: str,
                  player_name:str):
     
-        self.__version__ = "v2.3.1"
+        self.__version__ = "v2.3.3"
         
         self.player_name = player_name
         self.display_mode = display_mode
