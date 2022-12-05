@@ -28,6 +28,7 @@ WORKDIR /home/LMSLCD2020
 RUN python3 -m pip install -r requirements.txt
 
 # RUN python3 testLCD.py -i 3 -l 0x27 -d volume -s 192.168.1.120:9000
-CMD ["python3","testLCD.py","-i","1","-d","bitrate","-s","192.168.1.120:9000"]
+# CMD ["python3","testLCD.py","-i","1","-d","bitrate","-s","192.168.1.120:9000"]
+CMD ["python3","lcdtainer.py"]
 # EXPOSE 8000
 # CMD ["python3","-m", "http.server"]
