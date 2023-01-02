@@ -9,11 +9,20 @@ I also wanted some things in the project:
 * use request
 * use json /API from the Logitech Media Server
 
-## Main problem
-I do not know how to have easy to understand help on the LMS API.
 
-## Answer
-Read the lmsmanager.py script to grab some information.
+## ENV variables Since january 2023 v2.4
+
+Environment variables are now used.
+
+* **LMS_SERVER** to define the server with the port, ie: 192.168.1.120:9000
+* **LMS_LCD** to define the address for the LCD, ie 0x3F
+* **LMS_I2C_PORT** to define the I2C port, dependign on the SBC coulb be 0, 1, 2... To find it use sudo i2cdetect -y "x"
+* **LMS_VIRTUAL_PORT** indicates you do not want to use some LCD, instead it prints on the screen
+* **LMS_DISPLAY_MODE** to define what to print on the LCD : "" or "cpu" or "clock" or "volume"
+* **LMS_PLAYER_NAME** to lock the LCD on a specific player
+
+**Note** you can still use the old parameters :
+
 
 
 ## I have 2 lines 16 char LCD
