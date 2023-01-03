@@ -56,6 +56,7 @@ class LCD16:
     
         self.__version__ = "v2.4.0"
         
+        sys.stdout.write("LCD16 class " + self.__version__ + " started!")
         self.player_name = player_name
         self.display_mode = display_mode
 
@@ -77,7 +78,13 @@ class LCD16:
             sleep(5)
 
         self.screen_lms_info()
-        sys.stdout.write("testLCD.py " + self.__version__ + " started!")
+
+        sys.stdout.write("server      : " + server)
+        sys.stdout.write("lcd         : " + str(lcd))
+        sys.stdout.write("i2c_port    : " + str(i2c_port))
+        sys.stdout.write("virtual_lcd : " + virtual_lcd)
+        sys.stdout.write("display_mode: " + self.display_mode)
+        
         sleep(3)
 
     def get_players_info(self, playername:str="")->dict: 
@@ -175,13 +182,12 @@ class LCD16:
         previous_time = 0
         player_pos = 0
         players_str="players"
-
+        
         server_status = self.my_server.cls_server_status()
         ram = 0
         
         while True:
             today = datetime.today()
-            
             if self.display_mode != "clock":
                 if today.second == 0:
                     server_status = self.my_server.cls_server_status()
@@ -347,20 +353,15 @@ class LCD16:
                     decal = decal + 1
                 last_song = song
                 sleep(sleep_duration)
-            elif self.display_mode == "clock":
-                today = datetime.today()
-                self.lcd.lcd_display_string(today.strftime("Clock %d/%m/%Y"), 1)
-                self.lcd.lcd_display_string(today.strftime("Time  %H:%M:%S"), 2)
-                sleep(.8)
-                sys.stdout.write("testLCD.py " + self.__version__ + " clock mode")
+            
             elif self.display_mode == "cpu":
                 if ram > 10:
                     ram = 0
-                self.lcd.lcd_display_string("CPU : " + str(psutil.cpu_percent()) +"% c:" +  str(psutil.cpu_count()), 1)
+                self.lcd.lcd_display_string("CPU: " + str(psutil.cpu_percent()) +"% c:" +  str(psutil.cpu_count()), 1)
                 if ram < 5:
-                    self.lcd.lcd_display_string("RAM tot: " + str(int(psutil.virtual_memory().total / 1024 / 1024)), 2)
+                    self.lcd.lcd_display_string("RAM tot: " + str(int(psutil.virtual_memory().total / 1024 / 1024)) + "Mo", 2)
                 elif ram < 10:
-                    self.lcd.lcd_display_string("RAM use: " + str(int(psutil.virtual_memory().used / 1024 / 1024)), 2)
+                    self.lcd.lcd_display_string("RAM use: " + str(int(psutil.virtual_memory().used / 1024 / 1024)) + "Mo", 2)
                 else:
                     hdd = psutil.disk_partitions()
                     data = []
@@ -380,7 +381,7 @@ class LCD16:
                         used = used / 1000000000
                         free = drive.free
                         free = free / 1000000000
-                        percent = drive.percent
+                        percent = int(drive.percent)
                         drives = {
                             "device": device,
                             "path": path,
@@ -392,14 +393,20 @@ class LCD16:
                         }
                         
                         self.lcd.lcd_display_string("part: " + device, 1)
-                        self.lcd.lcd_display_string("DISK total: " + str(int(total)), 2)
+                        self.lcd.lcd_display_string("Disk tot: " + str(int(total)) + "G", 2)
                         sleep(3)
-                        self.lcd.lcd_display_string("DISK total: " + str(int(total)), 1)
-                        self.lcd.lcd_display_string("used: " + str(int(used )) + " / " + str(percent) + "%", 2)
+                        self.lcd.lcd_display_string("DISK tot: " + str(int(total)) + "G", 1)
+                        self.lcd.lcd_display_string("used: " + str(int(used )) + "G -" + str(percent) + "%", 2)
                         sleep(3)
 
                 ram = ram + 1
                 sleep(.8)
+            else:
+                today = datetime.today()
+                self.lcd.lcd_display_string(today.strftime("Clock %d/%m/%Y"), 1)
+                self.lcd.lcd_display_string(today.strftime("Time  %H:%M:%S"), 2)
+                sleep(.8)
+                sys.stdout.write("testLCD.py " + self.__version__ + " clock mode")
 
 if __name__ == "__main__":
     """
@@ -413,6 +420,7 @@ if __name__ == "__main__":
     print("please use -h for help")
     print("Enjoy LMS!")
     print("more info here https://github.com/renaudrenaud/LMSLCD2020/blob/main/README.md") 
+    print("")
 
     description = "LMS API Requester"
     server_help = "ip and port for the server. something like 192.168.1.192:9000"
@@ -435,6 +443,9 @@ if __name__ == "__main__":
     while True:
         if os.getenv('LMS_SERVER') is not None:
             args.server = os.environ['LMS_SERVER']  
+            print("server from ENV: " + args.server)
+        else:
+            print("no server from ENV")
         if os.getenv('LMS_LCD') is not None:
             args.lcd = os.environ['LMS_LCD']
         if os.getenv('LMS_I2C_PORT') is not None:
@@ -442,10 +453,11 @@ if __name__ == "__main__":
         if os.getenv('LMS_VIRTUAL_LCD') is not None:
             args.virtual_lcd = os.environ['LMS_VIRTUAL_LCD']
         if os.getenv('LMS_DISPLAY_MODE') is not None:
-            args.display_mode = os.environ['LMS_DISPLAY_MODE']  
+            args.display_mode = os.environ['LMS_DISPLAY_MODE'] 
+            print("display mode from ENV: " + args.display_mode)
         if os.getenv('LMS_PLAYER_NAME') is not None:
             args.player_name = os.environ['LMS_PLAYER_NAME']
-            
+           
         myLCD = LCD16(args.server, 
                       args.lcd, 
                       args.i2c_port,
