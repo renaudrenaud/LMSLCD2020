@@ -55,7 +55,16 @@ class LCD16:
                  player_name:str):
     
         self.__version__ = "v2.4.0"
-        
+        print("-------------------------------")
+        print("LCD16 class " + self.__version__ + " started!")
+        print("params are")
+        print("server      : " + server)
+        print("lcd         : " + str(lcd))
+        print("i2c_port    : " + str(i2c_port))
+        print("virtual_lcd : " + virtual_lcd)
+        print("display_mode: " + display_mode)
+        print("-------------------------------")
+
         sys.stdout.write("LCD16 class " + self.__version__ + " started!")
         self.player_name = player_name
         self.display_mode = display_mode
@@ -78,12 +87,6 @@ class LCD16:
             sleep(5)
 
         self.screen_lms_info()
-
-        sys.stdout.write("server      : " + server)
-        sys.stdout.write("lcd         : " + str(lcd))
-        sys.stdout.write("i2c_port    : " + str(i2c_port))
-        sys.stdout.write("virtual_lcd : " + virtual_lcd)
-        sys.stdout.write("display_mode: " + self.display_mode)
         
         sleep(3)
 
@@ -406,7 +409,6 @@ class LCD16:
                 self.lcd.lcd_display_string(today.strftime("Clock %d/%m/%Y"), 1)
                 self.lcd.lcd_display_string(today.strftime("Time  %H:%M:%S"), 2)
                 sleep(.8)
-                sys.stdout.write("testLCD.py " + self.__version__ + " clock mode")
 
 if __name__ == "__main__":
     """
