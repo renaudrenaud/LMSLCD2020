@@ -1,20 +1,22 @@
 """
-2020-01-25: Renaud wants to use Python3 "requests" for LMS
+2020-01-25: we want to use Python3 "requests" for LMS
 
-There was something existing but in python2 and something else than requests
+There was something existing but in python2 not using requests
 The goal was to use Python3 and Request to have something more "modern"
 
-This is just some code has a hobby and maybe an help to decypher the
-LMS API.
+Some code has a hobby and maybe an help to decypher the LMS API.
 """
 
+import sys
 import requests
 import argparse
 from json import dumps
 
+
 class LmsServer:
     """
     This class to grab informations from the LMS SERVER
+    2023-01-02: V1.2.2: adding sys.stderr.write when request fails
     2022-07-26: V1.2.1: returns [] when no player found
     2021-03-24: V1.2.0: adding 2 methods
                             - cls_player_playlist_clear
@@ -35,11 +37,12 @@ class LmsServer:
     2021-01-25: v0.0.1: starting
 
     """
-    def __init__(self, serveur_ip):
+    def __init__(self, serveur_ip:str):
         """
-
+        Init the class
+        serveur_ip: str, the ip address of the LMS server
         """
-        self.__version__ = "1.2.0"
+        self.__version__ = "1.2.2"
         self.URL = "http://" + serveur_ip + "/jsonrpc.js" 
 
     def _cls_execute_request(self, payload)-> dict:
@@ -51,6 +54,8 @@ class LmsServer:
         try:
             response = requests.request("POST", url=self.URL, headers=headers, data=payload)
         except Exception as err:
+            sys.stderr.write("LmsServer v" + self.__version__ + " cannot get response from: " + self.URL)
+            print("LmsServer v" + self.__version__ + " cannot get response from: " + self.URL)
             print(str(err))
             return err
         return response.json()

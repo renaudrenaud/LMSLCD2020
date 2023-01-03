@@ -11,13 +11,13 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "justMyCode": true,
-            "args": ["-i=1", "-d=volume", "-v=yes", "-s=192.168.1.120:9000"],
+            "args": ["-i=1", "-d=", "-v=yes", "-s=192.168.1.120:9000"],
             "env":{"LMS_SERVER":"192.168.1.120:9000",
-                    "LCD":"0x3F",
-                    "I2C_PORT":"1",
-                    "VIRTUAL_LCD":"True",
-                    "DIPLAY_MODE":"volume",
-                    "PLAYER_NAME":""}
+                    "LMS_LCD":"0x3F",
+                    "LMS_I2C_PORT":"1",
+                    "LMS_VIRTUAL_LCD":"yes",
+                    "LMS_DISPLAY_MODE":"cpu",
+                    "LMS_PLAYER_NAME":""}
         }
     ]
 }

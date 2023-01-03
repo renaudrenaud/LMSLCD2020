@@ -1,6 +1,0 @@
-{
-    "python.formatt ing.provider": "black",
-
-    "args": ["-i=2", "-d=volume", "-v=yes", "-s=192.168.1.20:9000"]
-    
-}

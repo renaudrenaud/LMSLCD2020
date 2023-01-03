@@ -5,6 +5,10 @@ RC 2020-01-15
 To debug with codium we need root for LCD Access:
 sudo codium --user-data-dir="~/.vscode-root"
 
+
+2023-01-01 v2.4.0: add a new display mode "cpu" to show 
+                    the CPU usage, ram and disk usage
+                   add some logs, espcially for the docker
 2022-11-06 v2.3.3: fix: error with "mixer_volume" corrected in "mixer volume"
 2021-11-19 v2.3.2: take in account player with no mixer volume! 
 2021-05-16 v2.3.1: search IP and print at launch
@@ -21,6 +25,8 @@ sudo codium --user-data-dir="~/.vscode-root"
                    - remove spaces for track on track, not required and we have only 16 char!
 """
 
+import sys
+import os
 import argparse
 from datetime import datetime
 from datetime import timedelta
@@ -33,6 +39,8 @@ from lmsmanager import LmsServer
 import socket
 import platform
 import unicodedata
+import psutil
+
 
 class LCD16:
     """
@@ -46,7 +54,7 @@ class LCD16:
                  display_mode: str,
                  player_name:str):
     
-        self.__version__ = "v2.3.3"
+        self.__version__ = "v2.4.0"
         
         self.player_name = player_name
         self.display_mode = display_mode
@@ -69,6 +77,7 @@ class LCD16:
             sleep(5)
 
         self.screen_lms_info()
+        sys.stdout.write("testLCD.py " + self.__version__ + " started!")
         sleep(3)
 
     def get_players_info(self, playername:str="")->dict: 
@@ -146,8 +155,8 @@ class LCD16:
 
         server = self.my_server.cls_server_status() 
         if type(server) is not dict:
-            self.lcd.lcd_display_string("LMS not found", 3)
-            self.lcd.lcd_display_string("no player.",4)
+            self.lcd.lcd_display_string("LMS not found", 1)
+            self.lcd.lcd_display_string("no player.",2)
         else:
             res = server["result"]
             self.lcd.lcd_display_string("LMS    : v" + res["version"],1)
@@ -168,9 +177,11 @@ class LCD16:
         players_str="players"
 
         server_status = self.my_server.cls_server_status()
-
+        ram = 0
+        
         while True:
             today = datetime.today()
+            
             if self.display_mode != "clock":
                 if today.second == 0:
                     server_status = self.my_server.cls_server_status()
@@ -264,7 +275,7 @@ class LCD16:
                 album = unicodedata.normalize('NFD', album).encode('ascii', 'ignore').decode("utf-8")
                 song_title = unicodedata.normalize('NFD', song_title).encode('ascii', 'ignore').decode("utf-8")
 
-                if self.display_mode == "volume" or change_volume == True:
+                if self.display_mode == "volume" and change_volume == True:
                     self.lcd.lcd_display_string("Vol" + chr(255) * int(mixer_volume / 10) + chr(95) * (10 -(int(mixer_volume / 10))) + str(mixer_volume)  , 1)
                     # lcd.lcd_display_string(("B:" + samplesize + " - F:" + samplerate + ' ' * 20)[:16], 2)
                     self.lcd.lcd_display_string(("B:" + samplesize + "-F:" + samplerate + ' ' + file_format + ' ' * 16)[:16], 2)
@@ -278,7 +289,7 @@ class LCD16:
                         self.lcd.lcd_display_string(player['player_ip'].split(":")[0], 2)   
                     except:
                         pass
-                    
+                    sys.stdout.write(" > testLCD.py " + self.__version__ + " playing with: " + player['player_name'])
                     sleep(2)     
 
                 elif player["time"] < 10 and player["time"] != previous_time:    
@@ -336,29 +347,78 @@ class LCD16:
                     decal = decal + 1
                 last_song = song
                 sleep(sleep_duration)
-            else:
+            elif self.display_mode == "clock":
                 today = datetime.today()
                 self.lcd.lcd_display_string(today.strftime("Clock %d/%m/%Y"), 1)
                 self.lcd.lcd_display_string(today.strftime("Time  %H:%M:%S"), 2)
+                sleep(.8)
+                sys.stdout.write("testLCD.py " + self.__version__ + " clock mode")
+            elif self.display_mode == "cpu":
+                if ram > 10:
+                    ram = 0
+                self.lcd.lcd_display_string("CPU : " + str(psutil.cpu_percent()) +"% c:" +  str(psutil.cpu_count()), 1)
+                if ram < 5:
+                    self.lcd.lcd_display_string("RAM tot: " + str(int(psutil.virtual_memory().total / 1024 / 1024)), 2)
+                elif ram < 10:
+                    self.lcd.lcd_display_string("RAM use: " + str(int(psutil.virtual_memory().used / 1024 / 1024)), 2)
+                else:
+                    hdd = psutil.disk_partitions()
+                    data = []
+                    
+                        
+                    for partition in hdd:
+                        device = partition.device
+                        path = partition.mountpoint
+                        fstype = partition.fstype
+
+                        drive = psutil.disk_usage(path)
+                        total = drive.total
+                        total = total / 1000000000
+                        if total < 1:
+                            break
+                        used = drive.used
+                        used = used / 1000000000
+                        free = drive.free
+                        free = free / 1000000000
+                        percent = drive.percent
+                        drives = {
+                            "device": device,
+                            "path": path,
+                            "fstype": fstype,
+                            "total": float("{0: .2f}".format(total)),
+                            "used": float("{0: .2f}".format(used)),
+                            "free": float("{0: .2f}".format(free)),
+                            "percent": percent
+                        }
+                        
+                        self.lcd.lcd_display_string("part: " + device, 1)
+                        self.lcd.lcd_display_string("DISK total: " + str(int(total)), 2)
+                        sleep(3)
+                        self.lcd.lcd_display_string("DISK total: " + str(int(total)), 1)
+                        self.lcd.lcd_display_string("used: " + str(int(used )) + " / " + str(percent) + "%", 2)
+                        sleep(3)
+
+                ram = ram + 1
                 sleep(.8)
 
 if __name__ == "__main__":
     """
     This is the main:
-    - grabbing params from CLI 
-    - 
+    - grabbing params from ENV or CLI 
+    - ENV is used for docker and if define has priority against CLI
     """
 
     print("--- LMS API Requester ---")
     print("      For 16*2 LCD")
     print("please use -h for help")
-    print("Enjoy using LMS!")
+    print("Enjoy LMS!")
+    print("more info here https://github.com/renaudrenaud/LMSLCD2020/blob/main/README.md") 
 
     description = "LMS API Requester"
     server_help = "ip and port for the server. something like 192.168.1.192:9000"
     lcd_help = "LCD address something like 0x3f"
     i2c_help = "i2cdetect port, 0 or 1, 0 for Orange Pi Zero, 1 for Rasp > V2"
-    display_mode_help = "set to volume or bitrate"
+    display_mode_help = "set to volume or cpu or clock"
     player_name_help = "player name to lock the LCD on it"
 
     parser = argparse.ArgumentParser(description = description)
@@ -366,13 +426,26 @@ if __name__ == "__main__":
     parser.add_argument("-l","--lcd", type=lambda x: int(x, 0), default=0x3f, help = lcd_help)
     parser.add_argument("-i","--i2c_port", type=int, default=1, help = i2c_help)
     parser.add_argument("-v","--virtual_lcd", type=str, default="", help = lcd_help)
-    parser.add_argument("-d","--display_mode", type=str, default="volume", help = display_mode_help)
+    parser.add_argument("-d","--display_mode", type=str, default="", help = display_mode_help)
     parser.add_argument("-p","--player_name",type=str, default="", help = player_name_help)
 
     args = parser.parse_args()
 
     # we are supposed to run this to the end of time
     while True:
+        if os.getenv('LMS_SERVER') is not None:
+            args.server = os.environ['LMS_SERVER']  
+        if os.getenv('LMS_LCD') is not None:
+            args.lcd = os.environ['LMS_LCD']
+        if os.getenv('LMS_I2C_PORT') is not None:
+            args.i2c_port = os.environ['LMS_I2C_PORT']
+        if os.getenv('LMS_VIRTUAL_LCD') is not None:
+            args.virtual_lcd = os.environ['LMS_VIRTUAL_LCD']
+        if os.getenv('LMS_DISPLAY_MODE') is not None:
+            args.display_mode = os.environ['LMS_DISPLAY_MODE']  
+        if os.getenv('LMS_PLAYER_NAME') is not None:
+            args.player_name = os.environ['LMS_PLAYER_NAME']
+            
         myLCD = LCD16(args.server, 
                       args.lcd, 
                       args.i2c_port,
@@ -383,4 +456,5 @@ if __name__ == "__main__":
             myLCD.main_loop()
         except Exception as err:
             print(str(err))
+            sys.stderr.write('Exception: %s')
             myLCD = None        
