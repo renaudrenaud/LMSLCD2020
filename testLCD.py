@@ -6,6 +6,7 @@ To debug with codium we need root for LCD Access:
 sudo codium --user-data-dir="~/.vscode-root"
 
 
+2023-01-03 v2.5.0: add new display modes "cpuonly"  and "cpuram"
 2023-01-01 v2.4.0: add a new display mode "cpu" to show 
                     the CPU usage, ram and disk usage
                    add some logs, espcially for the docker
@@ -54,7 +55,7 @@ class LCD16:
                  display_mode: str,
                  player_name:str):
     
-        self.__version__ = "v2.4.0"
+        self.__version__ = "v2.5.0"
         print("-------------------------------")
         print("LCD16 class " + self.__version__ + " started!")
         print("params are")
@@ -191,218 +192,237 @@ class LCD16:
         
         while True:
             today = datetime.today()
-            if self.display_mode != "clock":
-                if today.second == 0:
-                    server_status = self.my_server.cls_server_status()
-                if change_volume is False:
-                    player_info, players = self.get_players_info(self.player_name)
+            if "cpuonly" not in self.display_mode:
+                if self.display_mode != "clock":
+                    if today.second == 0:
+                        server_status = self.my_server.cls_server_status()
+                    if change_volume is False:
+                        player_info, players = self.get_players_info(self.player_name)
 
-            if self.display_mode != "clock" and player_info is not None and player_info['isplaying'] ==1 and type(server_status) is dict:
-                if self.my_server.cls_server_is_scanning():
-                    if runner != "S":
-                        runner = "S"
-                    else:
-                        runner = "s"
-                else:
-                    if runner != "*":
-                        runner = "*"
-                    else:
-                        runner = "+"
-                                
-                player = self.my_server.cls_player_current_title_status(player_info['playerid'])
-
-                if "mixer volume" in player:
-                    if player["mixer volume"] != mixer_volume or change_volume is True:
-                        if mixer_volume == 0:
-                            mixer_volume = player["mixer volume"]
+                if self.display_mode != "clock" \
+                    and player_info is not None  and player_info['isplaying'] ==1    and type(server_status) is dict:
+                    if self.my_server.cls_server_is_scanning():
+                        if runner != "S":
+                            runner = "S"
                         else:
-                            if player["mixer volume"] != mixer_volume:
-                                start_volume_date = datetime.now()
-                            
-                            mixer_volume = player["mixer volume"]
-                            
-                            if change_volume is False:
-                                start_volume_date = datetime.now()  
-                                change_volume = True
-                                old_sleep_duration = sleep_duration
-                                sleep_duration = 0
-                            
-                            else:
-                                if (datetime.now() - start_volume_date).seconds > 3:
-                                    change_volume = False
-                                    start_volume_date = 0
-                                    sleep_duration = old_sleep_duration
+                            runner = "s"
+                    else:
+                        if runner != "*":
+                            runner = "*"
+                        else:
+                            runner = "+"
+                                    
+                    player = self.my_server.cls_player_current_title_status(player_info['playerid'])
 
+                    if "mixer volume" in player:
+                        if player["mixer volume"] != mixer_volume or change_volume is True:
+                            if mixer_volume == 0:
+                                mixer_volume = player["mixer volume"]
+                            else:
+                                if player["mixer volume"] != mixer_volume:
+                                    start_volume_date = datetime.now()
+                                
+                                mixer_volume = player["mixer volume"]
+                                
+                                if change_volume is False:
+                                    start_volume_date = datetime.now()  
+                                    change_volume = True
+                                    old_sleep_duration = sleep_duration
+                                    sleep_duration = 0
+                                
+                                else:
+                                    if (datetime.now() - start_volume_date).seconds > 3:
+                                        change_volume = False
+                                        start_volume_date = 0
+                                        sleep_duration = old_sleep_duration
+
+                        else:
+                            change_volume = False
                     else:
                         change_volume = False
-                else:
-                    change_volume = False
-                song_index = int(player["playlist_cur_index"]) 
-                song = player["playlist_loop"][song_index]
-            
-                if int(song["id"]) != 0:
-                    # When id is positive, it comes from LMS database
-                    if (song_info is None or song["id"] != song_info["songinfo_loop"][0]["id"]) or int(song["id"]) < 0:
-                        song_info = self.my_server.cls_song_info(song["id"], player_info['playerid'])
-                        if song != last_song:
-                            album = self.get_from_loop(song_info["songinfo_loop"], "album")
-                            # if "artist" in song_info["songinfo_loop"][4].keys():
-                            artist = self.get_from_loop(song_info["songinfo_loop"], "artist")
+                    song_index = int(player["playlist_cur_index"]) 
+                    song = player["playlist_loop"][song_index]
+                
+                    if int(song["id"]) != 0:
+                        # When id is positive, it comes from LMS database
+                        if (song_info is None or song["id"] != song_info["songinfo_loop"][0]["id"]) or int(song["id"]) < 0:
+                            song_info = self.my_server.cls_song_info(song["id"], player_info['playerid'])
+                            if song != last_song:
+                                album = self.get_from_loop(song_info["songinfo_loop"], "album")
+                                # if "artist" in song_info["songinfo_loop"][4].keys():
+                                artist = self.get_from_loop(song_info["songinfo_loop"], "artist")
 
-                            if len(artist) == 0:
-                                artist = self.get_from_loop(song_info["songinfo_loop"], "albumartist")
-                            if len(artist) == 0:
-                                artist = song["title"]
+                                if len(artist) == 0:
+                                    artist = self.get_from_loop(song_info["songinfo_loop"], "albumartist")
+                                if len(artist) == 0:
+                                    artist = song["title"]
 
-                            song_title = self.get_from_loop(song_info["songinfo_loop"], "title")
-                            # current_title = ""
-                            # if "current_title" in player.keys():
-                                # current_title = player['current_title']
-                            
-                            samplesize = self.get_from_loop(song_info["songinfo_loop"], "samplesize")
-                            if samplesize == "":
-                                samplesize = "N/A"
-                            
-                            samplerate = self.get_from_loop(song_info["songinfo_loop"], "samplerate")
-                            if samplerate == "":
-                                samplerate = "N/A"
-                            else:
-                                samplerate = str(int(int(samplerate) / 1000)) + "k"
-                            
-                            bitrate = self.get_from_loop(song_info["songinfo_loop"], "bitrate")
-                            file_format = self.get_from_loop(song_info["songinfo_loop"], "type")
+                                song_title = self.get_from_loop(song_info["songinfo_loop"], "title")
+                                # current_title = ""
+                                # if "current_title" in player.keys():
+                                    # current_title = player['current_title']
+                                
+                                samplesize = self.get_from_loop(song_info["songinfo_loop"], "samplesize")
+                                if samplesize == "":
+                                    samplesize = "N/A"
+                                
+                                samplerate = self.get_from_loop(song_info["songinfo_loop"], "samplerate")
+                                if samplerate == "":
+                                    samplerate = "N/A"
+                                else:
+                                    samplerate = str(int(int(samplerate) / 1000)) + "k"
+                                
+                                bitrate = self.get_from_loop(song_info["songinfo_loop"], "bitrate")
+                                file_format = self.get_from_loop(song_info["songinfo_loop"], "type")
 
-                            duration = self.get_from_loop(song_info["songinfo_loop"],"duration") 
-                            dur_hh_mm_ss = strftime("%H:%M:%S", gmtime(int(duration)))
-                            track_pos = str(int(player['playlist_cur_index']) + 1) + "/" + str(player['playlist_tracks']) 
-                            decal = 0
+                                duration = self.get_from_loop(song_info["songinfo_loop"],"duration") 
+                                dur_hh_mm_ss = strftime("%H:%M:%S", gmtime(int(duration)))
+                                track_pos = str(int(player['playlist_cur_index']) + 1) + "/" + str(player['playlist_tracks']) 
+                                decal = 0
+                                decal1 = 0
+                                decal2 = 0
+
+                    # remove accented chars, LCD cannot write them
+                    artist = unicodedata.normalize('NFD', artist).encode('ascii', 'ignore').decode("utf-8")
+                    album = unicodedata.normalize('NFD', album).encode('ascii', 'ignore').decode("utf-8")
+                    song_title = unicodedata.normalize('NFD', song_title).encode('ascii', 'ignore').decode("utf-8")
+
+                    if self.display_mode == "volume" and change_volume == True:
+                        self.lcd.lcd_display_string("Vol" + chr(255) * int(mixer_volume / 10) + chr(95) * (10 -(int(mixer_volume / 10))) + str(mixer_volume)  , 1)
+                        # lcd.lcd_display_string(("B:" + samplesize + " - F:" + samplerate + ' ' * 20)[:16], 2)
+                        self.lcd.lcd_display_string(("B:" + samplesize + "-F:" + samplerate + ' ' + file_format + ' ' * 16)[:16], 2)
+                        
+                        
+                    elif player["time"] < 3 and player["time"] != previous_time:
+                        # When track time is less then 3 seconds it means a new song
+                        previous_time = player["time"]
+                        self.lcd.lcd_display_string(player['player_name'], 1)
+                        try:
+                            self.lcd.lcd_display_string(player['player_ip'].split(":")[0], 2)   
+                        except:
+                            pass
+                        sys.stdout.write(" > testLCD.py " + self.__version__ + " playing with: " + player['player_name'])
+                        sleep(2)     
+
+                    elif player["time"] < 10 and player["time"] != previous_time:    
+                        max_car1 = len(artist) -16
+                        # max_car2 = len(album) -16
+                        if decal1 > max_car1:
                             decal1 = 0
+                        if decal2 > max_car1:
                             decal2 = 0
+                        self.lcd.lcd_display_string(artist[decal1:16 + decal], 1)
+                        self.lcd.lcd_display_string(album[decal2:16 + decal], 2)
+                
+                    elif player["time"] < 15 and player["time"] != previous_time:
+                        self.lcd.lcd_display_string(("B:" + samplesize + "-F:" + samplerate + ' ' + file_format + ' ' * 16)[:16], 1)
+                        self.lcd.lcd_display_string((bitrate + ' ' * 16)[:16], 2)
+                        
+                    elif player["time"] < 20 and player["time"] != previous_time:
 
-                # remove accented chars, LCD cannot write them
-                artist = unicodedata.normalize('NFD', artist).encode('ascii', 'ignore').decode("utf-8")
-                album = unicodedata.normalize('NFD', album).encode('ascii', 'ignore').decode("utf-8")
-                song_title = unicodedata.normalize('NFD', song_title).encode('ascii', 'ignore').decode("utf-8")
+                        self.lcd.lcd_display_string("durat-:" + dur_hh_mm_ss, 1)
+                        self.lcd.lcd_display_string("tracks: " + track_pos, 2)
 
-                if self.display_mode == "volume" and change_volume == True:
-                    self.lcd.lcd_display_string("Vol" + chr(255) * int(mixer_volume / 10) + chr(95) * (10 -(int(mixer_volume / 10))) + str(mixer_volume)  , 1)
-                    # lcd.lcd_display_string(("B:" + samplesize + " - F:" + samplerate + ' ' * 20)[:16], 2)
-                    self.lcd.lcd_display_string(("B:" + samplesize + "-F:" + samplerate + ' ' + file_format + ' ' * 16)[:16], 2)
-                    
-                    
-                elif player["time"] < 3 and player["time"] != previous_time:
-                    # When track time is less then 3 seconds it means a new song
-                    previous_time = player["time"]
-                    self.lcd.lcd_display_string(player['player_name'], 1)
-                    try:
-                        self.lcd.lcd_display_string(player['player_ip'].split(":")[0], 2)   
-                    except:
-                        pass
-                    sys.stdout.write(" > testLCD.py " + self.__version__ + " playing with: " + player['player_name'])
-                    sleep(2)     
-
-                elif player["time"] < 10 and player["time"] != previous_time:    
-                    max_car1 = len(artist) -16
-                    # max_car2 = len(album) -16
-                    if decal1 > max_car1:
-                        decal1 = 0
-                    if decal2 > max_car1:
-                        decal2 = 0
-                    self.lcd.lcd_display_string(artist[decal1:16 + decal], 1)
-                    self.lcd.lcd_display_string(album[decal2:16 + decal], 2)
-            
-                elif player["time"] < 15 and player["time"] != previous_time:
-                    self.lcd.lcd_display_string(("B:" + samplesize + "-F:" + samplerate + ' ' + file_format + ' ' * 16)[:16], 1)
-                    self.lcd.lcd_display_string((bitrate + ' ' * 16)[:16], 2)
-                    
-                elif player["time"] < 20 and player["time"] != previous_time:
-
-                    self.lcd.lcd_display_string("durat-:" + dur_hh_mm_ss, 1)
-                    self.lcd.lcd_display_string("tracks: " + track_pos, 2)
-
-                else:
-                    if 'will_sleep_in' in player.keys():
-                        # sleep function is activated!
-                        self.lcd.lcd_display_string(strftime("sleep in %M:%S", gmtime(player['will_sleep_in'])), 1)
                     else:
-                        # some code to print number of players on 1 char!
-                        if player_pos < len(players_str) and player_pos >= 0:
-                            player_count = players_str[player_pos]
-                            player_pos = player_pos + 1
-                        elif player_pos >= -5 and player_pos < len(players_str):
-                            player_count = str(len(players))
-                            player_pos = player_pos + 1
+                        if 'will_sleep_in' in player.keys():
+                            # sleep function is activated!
+                            self.lcd.lcd_display_string(strftime("sleep in %M:%S", gmtime(player['will_sleep_in'])), 1)
                         else:
-                            player_count = str(len(players))
-                            player_pos = - 5 
+                            # some code to print number of players on 1 char!
+                            if player_pos < len(players_str) and player_pos >= 0:
+                                player_count = players_str[player_pos]
+                                player_pos = player_pos + 1
+                            elif player_pos >= -5 and player_pos < len(players_str):
+                                player_count = str(len(players))
+                                player_pos = player_pos + 1
+                            else:
+                                player_count = str(len(players))
+                                player_pos = - 5 
 
-                        self.lcd.lcd_display_string(today.strftime("%d/%m/%y %H:%M") + runner + player_count, 1)
+                            self.lcd.lcd_display_string(today.strftime("%d/%m/%y %H:%M") + runner + player_count, 1)
+                            
+                        if self.my_server.cls_server_is_scanning():
+                            scan = self.my_server.cls_server_scanning_status()
+                            title = "scaning " + scan['steps'] + " " + scan['totaltime'] + "...  "
+                        else:
+                            title = track_pos + " Tit: " + song_title  
+                            if len(album) > 0:
+                                title = title + " - Alb: " + album  
+                            if len(artist) > 0:
+                                title = title + " - Art: " + artist  
+                            title = title + "  "
                         
-                    if self.my_server.cls_server_is_scanning():
-                        scan = self.my_server.cls_server_scanning_status()
-                        title = "scaning " + scan['steps'] + " " + scan['totaltime'] + "...  "
-                    else:
-                        title = track_pos + " Tit: " + song_title  
-                        if len(album) > 0:
-                            title = title + " - Alb: " + album  
-                        if len(artist) > 0:
-                            title = title + " - Art: " + artist  
-                        title = title + "  "
-                    
-                    max_car = len(title) - 16
-                    if decal > max_car:
-                        decal = 0  
-                    self.lcd.lcd_display_string(title[decal:16 + decal], 2)
-                    decal = decal + 1
-                last_song = song
-                sleep(sleep_duration)
+                        max_car = len(title) - 16
+                        if decal > max_car:
+                            decal = 0  
+                        self.lcd.lcd_display_string(title[decal:16 + decal], 2)
+                        decal = decal + 1
+                    last_song = song
+                    sleep(sleep_duration)
             
-            elif self.display_mode == "cpu":
-                if ram > 10:
-                    ram = 0
-                self.lcd.lcd_display_string("CPU: " + str(psutil.cpu_percent()) +"% c:" +  str(psutil.cpu_count()), 1)
-                if ram < 5:
-                    self.lcd.lcd_display_string("RAM tot: " + str(int(psutil.virtual_memory().total / 1024 / 1024)) + "Mo", 2)
-                elif ram < 10:
-                    self.lcd.lcd_display_string("RAM use: " + str(int(psutil.virtual_memory().used / 1024 / 1024)) + "Mo", 2)
-                else:
-                    hdd = psutil.disk_partitions()
-                    data = []
+            elif "cpu" in self.display_mode:
+                self.lcd.lcd_display_string("CPU : " + str(psutil.cpu_percent()) +"% t:" +  
+                    str(int(psutil.sensors_temperatures()["soc_thermal"][0][1])), 1)
+                
+                if self.display_mode =="cpuonly":
+                    self.lcd.lcd_display_string("freq: " + str(int(psutil.cpu_freq().current)), 2)
+                    # print(str(psutil.sensors_temperatures()["soc_thermal"][0][1]))
+                elif self.display_mode =="cpuram":
                     
-                        
-                    for partition in hdd:
-                        device = partition.device
-                        path = partition.mountpoint
-                        fstype = partition.fstype
+                    print("total " + str(psutil.virtual_memory().total / 1024 / 1024))
+                    print("avail " + str(psutil.virtual_memory().available / 1024 / 1024))
+                    total = psutil.virtual_memory().total / 1024 / 1024
+                    avail = psutil.virtual_memory().available / 1024 / 1024
+                    pct = (total - avail) / total * 100
+                    print("pct " + str(round(pct,1)))
+                    self.lcd.lcd_display_string("RAM: " + str(int(psutil.virtual_memory().used / 1024 / 1024)) 
+                    + "Mo " + str(round(pct,1)) + "%" , 2)
+                else:
+                    
+                    if ram > 10:
+                        ram = 0
+                    # self.lcd.lcd_display_string("CPU: " + str(psutil.cpu_percent()) +"% c:" +  str(psutil.cpu_count()), 1)
+                    if ram < 5:
+                        self.lcd.lcd_display_string("RAM tot: " + str(int(psutil.virtual_memory().total / 1024 / 1024)) + "Mo", 2)
+                    elif ram < 10:
+                        self.lcd.lcd_display_string("RAM: " + str(int(psutil.virtual_memory().used / 1024 / 1024)) + "Mo", 2)
+                    else:
+                        hdd = psutil.disk_partitions()
+                        data = []
+                            
+                        for partition in hdd:
+                            device = partition.device
+                            path = partition.mountpoint
+                            fstype = partition.fstype
 
-                        drive = psutil.disk_usage(path)
-                        total = drive.total
-                        total = total / 1000000000
-                        if total < 1:
-                            break
-                        used = drive.used
-                        used = used / 1000000000
-                        free = drive.free
-                        free = free / 1000000000
-                        percent = int(drive.percent)
-                        drives = {
-                            "device": device,
-                            "path": path,
-                            "fstype": fstype,
-                            "total": float("{0: .2f}".format(total)),
-                            "used": float("{0: .2f}".format(used)),
-                            "free": float("{0: .2f}".format(free)),
-                            "percent": percent
-                        }
-                        
-                        self.lcd.lcd_display_string("part: " + device, 1)
-                        self.lcd.lcd_display_string("Disk tot: " + str(int(total)) + "G", 2)
-                        sleep(3)
-                        self.lcd.lcd_display_string("DISK tot: " + str(int(total)) + "G", 1)
-                        self.lcd.lcd_display_string("used: " + str(int(used )) + "G -" + str(percent) + "%", 2)
-                        sleep(3)
+                            drive = psutil.disk_usage(path)
+                            total = drive.total
+                            total = total / 1000000000
+                            if total < 1:
+                                break
+                            used = drive.used
+                            used = used / 1000000000
+                            free = drive.free
+                            free = free / 1000000000
+                            percent = int(drive.percent)
+                            drives = {
+                                "device": device,
+                                "path": path,
+                                "fstype": fstype,
+                                "total": float("{0: .2f}".format(total)),
+                                "used": float("{0: .2f}".format(used)),
+                                "free": float("{0: .2f}".format(free)),
+                                "percent": percent
+                            }
+                            
+                            self.lcd.lcd_display_string("part: " + device, 1)
+                            self.lcd.lcd_display_string("Disk tot: " + str(int(total)) + "G", 2)
+                            sleep(3)
+                            self.lcd.lcd_display_string("DISK tot: " + str(int(total)) + "G", 1)
+                            self.lcd.lcd_display_string("used: " + str(int(used )) + "G -" + str(percent) + "%", 2)
+                            sleep(3)
 
-                ram = ram + 1
+                    ram = ram + 1
                 sleep(.8)
             else:
                 today = datetime.today()

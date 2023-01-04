@@ -1,10 +1,12 @@
 # Some info
-# build: sudo docker build -t lcdtainer:latest .
+# build: sudo docker build -t lcdtainer:arm64 .
 # tag: sudo docker tag lcdtainer renaudrenaud/lcdtainer:arm64
 # add user to the docker group sudo usermod -aG docker $USER and exit session
 # login: docker login
 # push: docker push renaudrenaud/lcdtainer:arm64
-# run: docker run -d --name lcdtainer -p 8080:8080 renaudrenaud/lcdtainer:latest
+################################################################
+# for debug
+# run: docker run -d --name lcdtainer -p 8080:8080 renaudrenaud/lcdtainer:arm64
 # python3 testLCD.py -d volume -v yes -s 192.168.1.120:9000
 ################################################################
 # I2C
@@ -29,6 +31,7 @@ FROM python:3.11.0-slim-bullseye
 LABEL maintainer="renaudrenaud"
 
 RUN apt-get update -yq \ 
+&& apt-get install -y --no-install-recommends apt-utils \
 && apt install -yq git \
 && apt install -yq python3 \
 && apt install -yq python3-pip
@@ -38,7 +41,7 @@ RUN git clone https://github.com/renaudrenaud/LMSLCD2020.git
 
 WORKDIR /home/LMSLCD2020
 
-ENTRYPOINT ["python3","testLCD.py"]
+# ENTRYPOINT ["python3","testLCD.py"]
 
 RUN python3 -m pip install -r requirements.txt
 
