@@ -1,6 +1,6 @@
 # Some info
 # build: sudo docker build -t lcdtainer:arm64 .
-# tag: sudo docker tag lcdtainer renaudrenaud/lcdtainer:arm64
+# tag: sudo docker tag lcdtainer:arm64 renaudrenaud/lcdtainer:arm64
 # add user to the docker group sudo usermod -aG docker $USER and exit session
 # login: docker login
 # push: docker push renaudrenaud/lcdtainer:arm64

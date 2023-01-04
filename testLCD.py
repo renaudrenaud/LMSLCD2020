@@ -5,7 +5,7 @@ RC 2020-01-15
 To debug with codium we need root for LCD Access:
 sudo codium --user-data-dir="~/.vscode-root"
 
-
+2023-01-04 v2.5.1: add new display modes "cpudisk"
 2023-01-03 v2.5.0: add new display modes "cpuonly"  and "cpuram"
 2023-01-01 v2.4.0: add a new display mode "cpu" to show 
                     the CPU usage, ram and disk usage
@@ -55,7 +55,7 @@ class LCD16:
                  display_mode: str,
                  player_name:str):
     
-        self.__version__ = "v2.5.0"
+        self.__version__ = "v2.5.1"
         print("-------------------------------")
         print("LCD16 class " + self.__version__ + " started!")
         print("params are")
@@ -173,6 +173,70 @@ class LCD16:
             self.lcd.lcd_display_string("LMS    : v" + res["version"],1)
             self.lcd.lcd_display_string("Players: " + str(res["player count"]), 2)
 
+    def cpu_usage(self):
+        """
+        Print the 2 CPU usage lines
+        """
+        try:
+            self.lcd.lcd_display_string("CPU : " + str(psutil.cpu_percent()) +"% t:" +  
+                str(int(psutil.sensors_temperatures()["soc_thermal"][0][1])), 1)
+        except:
+            self.lcd.lcd_display_string("CPU : " + str(psutil.cpu_percent()) +"% t:?", 1)
+        
+        self.lcd.lcd_display_string("freq: " + str(int(psutil.cpu_freq().current)), 2)
+
+    def cpu_ram(self):
+        """
+        Print the 2 RAM usage lines
+        """
+        self.lcd.lcd_display_string("RAM : " + str(int(psutil.virtual_memory().total /1024 / 1024)) +"Mo ", 1)
+        # print("total " + str(psutil.virtual_memory().total / 1024 / 1024))
+        # print("avail " + str(psutil.virtual_memory().available / 1024 / 1024))
+        total = psutil.virtual_memory().total / 1024 / 1024
+        avail = psutil.virtual_memory().available / 1024 / 1024
+        pct = (total - avail) / total * 100
+        # print("pct " + str(round(pct,1)))
+        self.lcd.lcd_display_string("use " + str(int(psutil.virtual_memory().used / 1024 / 1024)) 
+        + "Mo " + str(round(pct,1)) + "%" , 2)
+
+    def cpu_disk(self):
+        """
+        Print disks info
+        """
+        hdd = psutil.disk_partitions()
+        data = []
+        nbdisk = 0
+        for partition in hdd:
+            device = partition.device
+            path = partition.mountpoint
+            fstype = partition.fstype
+
+            drive = psutil.disk_usage(path)
+            total = drive.total
+            total = total / 1000000000
+            if total > 1:
+                nbdisk = nbdisk + 1
+                used = drive.used
+                used = used / 1000000000
+                free = drive.free
+                free = free / 1000000000
+                percent = int(drive.percent)
+                drives = {
+                    "device": device,
+                    "path": path,
+                    "fstype": fstype,
+                    "total": float("{0: .2f}".format(total)),
+                    "used": float("{0: .2f}".format(used)),
+                    "free": float("{0: .2f}".format(free)),
+                    "percent": percent
+                }
+                
+                self.lcd.lcd_display_string("Disk " + str(nbdisk) + ": " + str(int(total)) + "G", 1)
+                self.lcd.lcd_display_string("part: " + device, 2)
+                sleep(2)
+                self.lcd.lcd_display_string("used: " + str(int(used )) + "G/" + str(percent) + "%", 2)
+                sleep(5)
+
     def main_loop(self):
         last_song = {}
         album = ""
@@ -192,7 +256,7 @@ class LCD16:
         
         while True:
             today = datetime.today()
-            if "cpuonly" not in self.display_mode:
+            if "cpu" not in self.display_mode:
                 if self.display_mode != "clock":
                     if today.second == 0:
                         server_status = self.my_server.cls_server_status()
@@ -361,68 +425,20 @@ class LCD16:
                     sleep(sleep_duration)
             
             elif "cpu" in self.display_mode:
-                self.lcd.lcd_display_string("CPU : " + str(psutil.cpu_percent()) +"% t:" +  
-                    str(int(psutil.sensors_temperatures()["soc_thermal"][0][1])), 1)
                 
                 if self.display_mode =="cpuonly":
-                    self.lcd.lcd_display_string("freq: " + str(int(psutil.cpu_freq().current)), 2)
-                    # print(str(psutil.sensors_temperatures()["soc_thermal"][0][1]))
+                    self.cpu_usage()
                 elif self.display_mode =="cpuram":
-                    
-                    print("total " + str(psutil.virtual_memory().total / 1024 / 1024))
-                    print("avail " + str(psutil.virtual_memory().available / 1024 / 1024))
-                    total = psutil.virtual_memory().total / 1024 / 1024
-                    avail = psutil.virtual_memory().available / 1024 / 1024
-                    pct = (total - avail) / total * 100
-                    print("pct " + str(round(pct,1)))
-                    self.lcd.lcd_display_string("RAM: " + str(int(psutil.virtual_memory().used / 1024 / 1024)) 
-                    + "Mo " + str(round(pct,1)) + "%" , 2)
+                    self.cpu_ram()
+                elif self.display_mode =="cpudisk":
+                    self.cpu_disk()
                 else:
-                    
-                    if ram > 10:
-                        ram = 0
-                    # self.lcd.lcd_display_string("CPU: " + str(psutil.cpu_percent()) +"% c:" +  str(psutil.cpu_count()), 1)
-                    if ram < 5:
-                        self.lcd.lcd_display_string("RAM tot: " + str(int(psutil.virtual_memory().total / 1024 / 1024)) + "Mo", 2)
-                    elif ram < 10:
-                        self.lcd.lcd_display_string("RAM: " + str(int(psutil.virtual_memory().used / 1024 / 1024)) + "Mo", 2)
-                    else:
-                        hdd = psutil.disk_partitions()
-                        data = []
-                            
-                        for partition in hdd:
-                            device = partition.device
-                            path = partition.mountpoint
-                            fstype = partition.fstype
+                    self.cpu_usage()
+                    sleep(3)
+                    self.cpu_ram()
+                    sleep(3)
+                    self.cpu_disk()
 
-                            drive = psutil.disk_usage(path)
-                            total = drive.total
-                            total = total / 1000000000
-                            if total < 1:
-                                break
-                            used = drive.used
-                            used = used / 1000000000
-                            free = drive.free
-                            free = free / 1000000000
-                            percent = int(drive.percent)
-                            drives = {
-                                "device": device,
-                                "path": path,
-                                "fstype": fstype,
-                                "total": float("{0: .2f}".format(total)),
-                                "used": float("{0: .2f}".format(used)),
-                                "free": float("{0: .2f}".format(free)),
-                                "percent": percent
-                            }
-                            
-                            self.lcd.lcd_display_string("part: " + device, 1)
-                            self.lcd.lcd_display_string("Disk tot: " + str(int(total)) + "G", 2)
-                            sleep(3)
-                            self.lcd.lcd_display_string("DISK tot: " + str(int(total)) + "G", 1)
-                            self.lcd.lcd_display_string("used: " + str(int(used )) + "G -" + str(percent) + "%", 2)
-                            sleep(3)
-
-                    ram = ram + 1
                 sleep(.8)
             else:
                 today = datetime.today()
